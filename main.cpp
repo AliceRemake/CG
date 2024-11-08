@@ -223,23 +223,24 @@ void UI() NOEXCEPT {
   {
     ImGui::Indent(10.0f);
 
-    // open Dialog Simple
-    if (ImGui::Button("Open File Dialog")) {
-      IGFD::FileDialogConfig config;
-      config.path = ".";
-      ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", config);
-    }
-    // display
-    if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
-      if (ImGuiFileDialog::Instance()->IsOk()) { // action if OK
-        std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-        std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-        // action
-      }
-    
-      // close
-      ImGuiFileDialog::Instance()->Close();
-    }
+    // TODO
+    // // open Dialog Simple
+    // if (ImGui::Button("Open File Dialog")) {
+    //   IGFD::FileDialogConfig config;
+    //   config.path = ".";
+    //   ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", config);
+    // }
+    // // display
+    // if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+    //   if (ImGuiFileDialog::Instance()->IsOk()) { // action if OK
+    //     std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+    //     std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+    //     // action
+    //   }
+    //   
+    //   // close
+    //   ImGuiFileDialog::Instance()->Close();
+    // }
     // if (ImGui::CollapsingHeader("Model"))
     // {
     //   for (size_t i = 0; i < scene.models.size(); ++i)
