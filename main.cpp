@@ -7,7 +7,6 @@
 #include <Rasterizer.h>
 #include <Pipeline.h>
 #include <Actor.h>
-#include <ImGuiFileDialog.h>
 
 // COMMENT: The Layout Of The Main Window Is Below:
 //
