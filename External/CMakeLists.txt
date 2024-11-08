@@ -1,0 +1,63 @@
+SET(SDL_STATIC ON)
+ADD_SUBDIRECTORY(SDL EXCLUDE_FROM_ALL)
+
+ADD_LIBRARY(glm INTERFACE)
+
+TARGET_COMPILE_DEFINITIONS(
+  glm INTERFACE
+  GLM_ENABLE_CXX_20
+  GLM_FORCE_SWIZZLE
+  GLM_FORCE_RADIANS
+  GLM_ENABLE_EXPERIMENTAL
+  GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+)
+
+TARGET_INCLUDE_DIRECTORIES(glm
+INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/glm
+)
+
+TARGET_SOURCES(glm
+INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/glm/glm/glm.hpp
+)
+
+ADD_LIBRARY(tinyobjloader INTERFACE)
+
+TARGET_INCLUDE_DIRECTORIES(tinyobjloader
+INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader
+)
+
+TARGET_SOURCES(tinyobjloader
+INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader/tiny_obj_loader.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader/tiny_obj_loader.h
+)
+
+ADD_LIBRARY(imgui STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imconfig.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_internal.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_tables.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imstb_rectpack.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imstb_textedit.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imstb_truetype.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdl3.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdl3.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdlrenderer3.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdlrenderer3.h
+)
+
+TARGET_INCLUDE_DIRECTORIES(imgui PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends
+)
+
+TARGET_LINK_LIBRARIES(imgui PUBLIC
+  SDL3::SDL3-static
+)
