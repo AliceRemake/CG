@@ -36,7 +36,7 @@ int main(const int argc, char** argv) {
   if (renderer == nullptr) { Fatal("Can Not Create Renderer! %s\n", SDL_GetError()); }
 
   tinyobj::ObjReader reader;
-  reader.ParseFromFile((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bunny.obj").string());
+  reader.ParseFromFile((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bun_zipper_res2.obj").string());
 
   Model m;
   m.name = "suzanne";
@@ -137,7 +137,7 @@ int main(const int argc, char** argv) {
     for (const auto& model : scene.models) {
       Pipeline::Transform(model, camera, vertices, normals);
       Pipeline::Assembly(vertices, model.meshes, app_state.cull_mode, lines, triangles);
-      Pipeline::Project(canvas, camera, app_state.clip_mode, lines, triangles);
+      Pipeline::Project(camera, app_state.clip_mode, lines, triangles);
       if (app_state.polygon_mode == Setting::POLYGON_MODE_LINE) {
         Pipeline::RasterizationLine(app_state, canvas, lines, triangles);
       } else if (app_state.polygon_mode == Setting::POLYGON_MODE_FILL) {

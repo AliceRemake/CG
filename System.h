@@ -164,7 +164,6 @@ struct Pipeline {
   }
 
   static void Project(
-    const Canvas& canvas,
     const Camera& camera,
     const Setting::ClipMode clip_mode,
     std::vector<Line>& lines,
@@ -232,6 +231,14 @@ struct Pipeline {
         lines.resize(std::max(j + 1, i - 1));
       }
     }
+  }
+  
+  static void RasterizationLine(
+    const Setting& app_state,
+    const Canvas& canvas,
+    std::vector<Line>& lines,
+    std::vector<Triangle>& triangles
+  ) NOEXCEPT {
     glm::mat4 viewport = Transform::Viewport(canvas);
     for (auto& line : lines) {
       for (auto& vertex : line.vertices) {
@@ -245,20 +252,21 @@ struct Pipeline {
         vertex = t.xyz() / t.w;
       }
     }
-  }
-  
-  static void RasterizationLine(
-    const Setting& app_state,
-    const Canvas& canvas,
-    const std::vector<Line>& lines,
-    const std::vector<Triangle>& triangles
-  ) NOEXCEPT {
     for (const auto& triangle : triangles) {
-      Rasterizer::RenderTriangleLine(canvas, triangle.vertices[0], triangle.vertices[1], triangle.vertices[2], {1.0f, 1.0f, 1.0f});
+      Rasterizer::RenderTriangleLine(canvas, 
+      glm::ivec2(glm::round(triangle.vertices[0].xy())),  
+      glm::ivec2(glm::round(triangle.vertices[1].xy())),  
+      glm::ivec2(glm::round(triangle.vertices[2].xy())), 
+      glm::vec3{1.0f, 1.0f, 1.0f}
+    );
     }
     if (app_state.show_normal) {
       for (const auto& line : lines) {
-        Rasterizer::RenderLine(canvas, line.vertices[0], line.vertices[1], {0.0f, 1.0f, 0.0f});
+        Rasterizer::RenderLine(canvas,
+          glm::ivec2(glm::round(line.vertices[0])),
+          glm::ivec2(glm::round(line.vertices[1])),
+          glm::vec3{0.0f, 1.0f, 0.0f}
+        );
       }
     }
   }
@@ -269,17 +277,37 @@ struct Pipeline {
     const Canvas& canvas,
     const std::vector<Light>& lights,
     const Shader::BlinnPhongConfig& config,
-    const std::vector<Line>& lines,
-    const std::vector<Triangle>& triangles
+    std::vector<Line>& lines,
+    std::vector<Triangle>& triangles
   ) NOEXCEPT {
+    glm::mat4 viewport = Transform::Viewport(canvas);
+    for (auto& line : lines) {
+      for (auto& vertex : line.vertices) {
+        glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
+        vertex = t.xyz() / t.w;
+      }
+    }
+    for (auto& triangle : triangles) {
+      for (auto& vertex : triangle.vertices) {
+        glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
+        vertex = t.xyz() / t.w;
+      }
+    }
     for (const auto& triangle : triangles) {
-      Rasterizer::RenderTriangleFill(canvas, triangle.vertices[0], triangle.vertices[1], triangle.vertices[2],
+      Rasterizer::RenderTriangleFill(canvas,
+        glm::ivec2(glm::round(triangle.vertices[0].xy())),
+        glm::ivec2(glm::round(triangle.vertices[1].xy())),
+        glm::ivec2(glm::round(triangle.vertices[2].xy())),
         Shader::BlinnPhongShading(camera, lights, triangle, config)
       );
     }
     if (app_state.show_normal) {
       for (const auto& line : lines) {
-        Rasterizer::RenderLine(canvas, line.vertices[0], line.vertices[1], {0.0f, 1.0f, 0.0f});
+        Rasterizer::RenderLine(canvas,
+          glm::ivec2(glm::round(line.vertices[0])),
+          glm::ivec2(glm::round(line.vertices[1])),
+          glm::vec3{0.0f, 1.0f, 0.0f}
+        );
       }
     }
   }
