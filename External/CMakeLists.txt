@@ -1,3 +1,5 @@
+ADD_SUBDIRECTORY(fmt)
+
 SET(SDL_STATIC ON)
 ADD_SUBDIRECTORY(SDL EXCLUDE_FROM_ALL)
 
@@ -22,20 +24,14 @@ INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/glm/glm/glm.hpp
 )
 
-ADD_LIBRARY(tinyobjloader INTERFACE)
+ADD_LIBRARY(imgui INTERFACE)
 
-TARGET_INCLUDE_DIRECTORIES(tinyobjloader
-INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader
+TARGET_INCLUDE_DIRECTORIES(imgui INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends
 )
 
-TARGET_SOURCES(tinyobjloader
-INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader/tiny_obj_loader.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader/tiny_obj_loader.h
-)
-
-ADD_LIBRARY(imgui STATIC
+TARGET_SOURCES(imgui INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imconfig.h
   ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.h
@@ -51,13 +47,4 @@ ADD_LIBRARY(imgui STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdl3.h
   ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdlrenderer3.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdlrenderer3.h
-)
-
-TARGET_INCLUDE_DIRECTORIES(imgui PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/imgui
-  ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends
-)
-
-TARGET_LINK_LIBRARIES(imgui PUBLIC
-  SDL3::SDL3-static
 )

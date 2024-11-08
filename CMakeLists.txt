@@ -26,16 +26,22 @@ PUBLIC
 TARGET_SOURCES(CGHomework
 PUBLIC
   main.cpp
-  System.cpp
-  System.h
+  Actor.h
+  Pipeline.h
+  Shader.h
+  Rasterizer.h
+  Transformer.h
+  Initializer.h
+  Loader.h
+  Debugger.h
   Entity.h
   Common.h
 )
 
 TARGET_LINK_LIBRARIES(CGHomework
 PUBLIC
-  SDL3-static
   glm
-  tinyobjloader
   imgui
+  SDL3-static
+  fmt
 )

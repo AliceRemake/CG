@@ -15,6 +15,28 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <fmt/format.h>
+#include <fmt/printf.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_opengl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <filesystem>
+#include <bitset>
+
+#undef near
+#undef far
+
 #define NODISCARD [[nodiscard]]
 #define NOEXCEPT noexcept
 #define CONSTEXPR constexpr
@@ -36,30 +58,30 @@
 #endif
 
 #if LOG_LEVEL_INFO >= LOG_LEVEL
-  #define Info(...)                                                                  \
-    do {                                                                             \
-      fprintf(stderr, "\033[0m[%s:%d]\033[0;32m[INFO]\033[0m:", __FILE__, __LINE__); \
-      fprintf(stderr, __VA_ARGS__);                                                  \
+  #define Info(...)                                                                       \
+    do {                                                                                  \
+      fmt::fprintf(stderr, "\033[0m[%s:%d]\033[0;32m[INFO]\033[0m:", __FILE__, __LINE__); \
+      fmt::fprintf(stderr, __VA_ARGS__);                                                  \
     } while (0)
 #else
   #define Info(fmt, ...) ((void)0)
 #endif
 
 #if LOG_LEVEL_WARN >= LOG_LEVEL
-  #define Warn(...)                                                                  \
-    do {                                                                             \
-      fprintf(stderr, "\033[0m[%s:%d]\033[1;33m[WARN]\033[0m:", __FILE__, __LINE__); \
-      fprintf(stderr, __VA_ARGS__);                                                  \
+  #define Warn(...)                                                                       \
+    do {                                                                                  \
+      fmt::fprintf(stderr, "\033[0m[%s:%d]\033[1;33m[WARN]\033[0m:", __FILE__, __LINE__); \
+      fmt::fprintf(stderr, __VA_ARGS__);                                                  \
     } while (0)
 #else
   #define Warn(fmt, ...) ((void)0)
 #endif
 
-#define Fatal(...)                                                                  \
-  do {                                                                              \
-    fprintf(stderr, "\033[0m[%s:%d]\033[0;31m[ERROR]\033[0m:", __FILE__, __LINE__); \
-    fprintf(stderr, __VA_ARGS__);                                                   \
-    exit(1);                                                                        \
+#define Fatal(...)                                                                       \
+  do {                                                                                   \
+    fmt::fprintf(stderr, "\033[0m[%s:%d]\033[0;31m[ERROR]\033[0m:", __FILE__, __LINE__); \
+    fmt::fprintf(stderr, __VA_ARGS__);                                                   \
+    exit(1);                                                                             \
   } while (0)
 
 #ifdef NDEBUG
@@ -67,26 +89,5 @@
 #else
   #define ASSERT(exp) do { assert(exp); } while (0)
 #endif
-
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_opengl.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <tiny_obj_loader.h>
-#include <imgui.h>
-#include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlrenderer3.h>
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstdint>
-#include <iostream>
-#include <vector>
-#include <string>
-#include <filesystem>
-#include <bitset>
-
-#undef near
-#undef far
 
 #endif //COMMON_H
