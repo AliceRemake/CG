@@ -5,6 +5,7 @@
 #include <Pipeline.h>
 #include <Actor.h>
 #include <Controller.h>
+#include <Loader.h>
 
 // COMMENT: Size Of The Renderer.
 CONSTEXPR int RENDERER_WIDTH = 1280;
@@ -62,7 +63,7 @@ int main(const int argc, char** argv)
   
   // COMMENT: Set Up Basic Scene.
   Model m;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "cube.obj").string().c_str(), m);
+  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "tokyo.obj").string().c_str(), m);
   scene.models.emplace_back(std::move(m));
   scene.lights.emplace_back(Light {
     .position = glm::vec3(0.0f, 2.0f, 2.0f),

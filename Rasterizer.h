@@ -92,7 +92,7 @@ private: // COMMENT: Internal Util Functions For Rasterization.
     // COMMENT: If The Line Is A Point.
     if (dx == 0 && dy == 0)
     {
-      RenderPixel(canvas, x, y, color);
+      RenderPixel(canvas, y, x, color);
       return;
     }
 
@@ -153,7 +153,7 @@ public: // COMMENT: Public Functions For Other Systems To Use.
   static void RenderTriangleFill(
     const Canvas& canvas,
     const glm::ivec2& p0, const glm::ivec2& p1, const glm::ivec2& p2,
-    float z0, float z1, float z2,
+    const float z0, const float z1, const float z2,
     const Color& color0, const Color& color1, const Color& color2
   ) NOEXCEPT {
     (void)z0;
@@ -164,7 +164,7 @@ public: // COMMENT: Public Functions For Other Systems To Use.
     (void)color2;
     
     glm::ivec2 vmin = glm::max(glm::min(glm::min(p0, p1), p2), glm::ivec2(0.0));
-    glm::ivec2 vmax = glm::min(glm::max(glm::max(p0, p1), p2), glm::ivec2(canvas.width, canvas.height));
+    glm::ivec2 vmax = glm::min(glm::max(glm::max(p0, p1), p2), glm::ivec2(canvas.width - 1, canvas.height - 1));
 
     for (int i = vmin.y; i <= vmax.y; ++i)
     {
@@ -178,6 +178,7 @@ public: // COMMENT: Public Functions For Other Systems To Use.
         );
         if (cord.x < 0 || cord.y < 0 || cord.z < 0) continue;
         cord = cord / (cord.x + cord.y + cord.z);
+        // FIXME: Is This Correct?
         float z = cord.x * z0 + cord.y * z1 + cord.z * z2;
         if (canvas.zbuffer[i][j] > z)
         {

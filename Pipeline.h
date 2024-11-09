@@ -211,13 +211,12 @@ struct Pipeline
     
     for (auto& triangle : triangles)
     {
-      // COMMENT: Transform Each Line From [-1, 1]^3 To Screen Space. Then Render It.
+      // COMMENT: Transform Each Triangle From [-1, 1]^3 To Screen Space. Then Render It.
       for (auto& vertex : triangle.vertices)
       {
         glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
         vertex = t.xyz() / t.w;
       }
-      // TODO: Implement This Function.
       Rasterizer::RenderTriangleFill(
         canvas,
         glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()),
@@ -226,7 +225,7 @@ struct Pipeline
       );
       if (setting.show_wireframe)
       {
-        Rasterizer::RenderTriangleLine(canvas, glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()), glm::vec3(1.0f));
+        Rasterizer::RenderTriangleLine(canvas, glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()), glm::vec3(0.0f));
       }
     }
   }

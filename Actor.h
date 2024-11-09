@@ -39,7 +39,7 @@ struct Actor
 
   static void OnUpdate(const Canvas& canvas) NOEXCEPT
   {
-    SDL_ClearSurface(canvas.surface, 0.0f, 0.0f, 0.0f, 0.0f);
+    SDL_ClearSurface(canvas.surface, 0.40f, 0.45f, 0.50f, 1.0f);
   }
   
   static void OnEvent(Model& m, const SDL_Event* event) NOEXCEPT

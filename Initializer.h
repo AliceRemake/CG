@@ -15,7 +15,6 @@
 
 #include <Common.h>
 #include <Entity.h>
-#include <Loader.h>
 
 // COMMENT: Initializer System. For Initialize And Reset Entities.
 struct Initializer

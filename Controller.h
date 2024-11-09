@@ -16,6 +16,7 @@
 #include <Common.h>
 #include <Entity.h>
 #include <Shader.h>
+#include <Loader.h>
 #include <Initializer.h>
 
 extern Canvas canvas;
