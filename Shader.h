@@ -24,11 +24,11 @@ struct Shader
   struct Config
   {
     // COMMENT: Ratio Of Ambient Light.
-    float ka = 0.3f;
+    float ka = 0.1f;
     // COMMENT: Ratio Of Diffuse Light.
-    float kd = 0.3f;
+    float kd = 0.5f;
     // COMMENT: Ratio Of Specular Light.
-    float ks = 0.3f;
+    float ks = 0.4f;
     // COMMENT: Pow Of Specular Light.
     float ps = 2.5f;
   };
@@ -44,7 +44,7 @@ struct Shader
       glm::vec3 o = glm::normalize(-vertex);
       glm::vec3 h = glm::normalize(i + o);
       diffuse += config.kd * std::max(0.0f, glm::dot(i, o)) * light.color;
-      specular += config.ks * std::pow(std::max(0.0f, glm::dot(h, normal)), config.ps) * light.color;
+      specular += config.ks * std::pow(std::max(0.0f, glm::dot(h, glm::normalize(normal))), config.ps) * light.color;
     }
     return ambient + diffuse + specular;
   }

@@ -37,6 +37,11 @@ struct Actor
     });
   }
 
+  static void OnUpdate(const Canvas& canvas) NOEXCEPT
+  {
+    SDL_ClearSurface(canvas.surface, 0.0f, 0.0f, 0.0f, 0.0f);
+  }
+  
   static void OnEvent(Model& m, const SDL_Event* event) NOEXCEPT
   {
     // COMMENT: Use Mouse Wheel To Scale Model.

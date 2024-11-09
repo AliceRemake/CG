@@ -150,14 +150,116 @@ public: // COMMENT: Public Functions For Other Systems To Use.
   }
 
   // COMMENT: Render A Triangle Wireframe, With The Specific Color.
-  static void RenderTriangleFill(const Canvas& canvas, const glm::ivec2& p0, const glm::ivec2& p1, const glm::ivec2& p2, const Color& color) NOEXCEPT {
-    (void)canvas;
-    (void)p0;
-    (void)p1;
-    (void)p2;
-    (void)color;
-  }
+  static void RenderTriangleFill(
+    const Canvas& canvas,
+    const glm::ivec2& p0, const glm::ivec2& p1, const glm::ivec2& p2,
+    float z0, float z1, float z2,
+    const Color& color0, const Color& color1, const Color& color2
+  ) NOEXCEPT {
+    (void)z0;
+    (void)z1;
+    (void)z2;
+    (void)color0;
+    (void)color1;
+    (void)color2;
+    
+    glm::ivec2 vmin = glm::max(glm::min(glm::min(p0, p1), p2), glm::ivec2(0.0));
+    glm::ivec2 vmax = glm::min(glm::max(glm::max(p0, p1), p2), glm::ivec2(canvas.width, canvas.height));
 
+    for (int i = vmin.y; i <= vmax.y; ++i)
+    {
+      for (int j = vmin.x; j <= vmax.x; ++j)
+      {
+        glm::ivec2 p(j, i);
+        glm::vec3 cord(
+          glm::cross(glm::vec3(p2 - p1, 0.0f), glm::vec3(p - p1, 0.0f)).z,
+          glm::cross(glm::vec3(p0 - p2, 0.0f), glm::vec3(p - p2, 0.0f)).z,
+          glm::cross(glm::vec3(p1 - p0, 0.0f), glm::vec3(p - p0, 0.0f)).z
+        );
+        if (cord.x < 0 || cord.y < 0 || cord.z < 0) continue;
+        cord = cord / (cord.x + cord.y + cord.z);
+        float z = cord.x * z0 + cord.y * z1 + cord.z * z2;
+        if (canvas.zbuffer[i][j] > z)
+        {
+          canvas.zbuffer[i][j] = z;
+          RenderPixel(canvas, i, j, cord.x * color0 + cord.y * color1 + cord.z * color2);
+        }
+      }
+    }
+    
+    // std::vector points = {p0,p1,p2};
+    // std::ranges::sort(points, [](const glm::ivec2& lhs, const glm::ivec2& rhs) -> bool {
+    //   return lhs.y == rhs.y ? lhs.x < rhs.x : lhs.y < rhs.y;
+    // });
+    // if (points[0].y == points[2].y) {
+    //   // RenderSegment(canvas, points[0].y, points[0].x, points[2].x, color);
+    //   return;
+    // }
+    // int jmin, jmax, dxl, dxr, delta_xl, delta_xr;
+    // float ml, mr, el, er;
+    // if (points[1].y != points[0].y) {
+    //   jmin = jmax = points[0].x;
+    //   if (points[0].x < points[1].x) {
+    //     dxl = points[2].x - points[0].x;
+    //     dxr = points[1].x - points[0].x;
+    //     ml = std::abs((float)dxl / (float)(points[2].y - points[0].y));
+    //     mr = std::abs((float)dxr / (float)(points[1].y - points[0].y));
+    //   } else {
+    //     dxl = points[1].x - points[0].x;
+    //     dxr = points[2].x - points[0].x;
+    //     ml = std::abs((float)dxl / (float)(points[1].y - points[0].y));
+    //     mr = std::abs((float)dxr / (float)(points[2].y - points[0].y));
+    //   }
+    //   delta_xl = dxl > 0 ? 1 : -1;
+    //   delta_xr = dxr > 0 ? 1 : -1;
+    //   el = ml - 0.5f;
+    //   er = mr - 0.5f;
+    //   for (int i = points[0].y; i < canvas.height && i < points[1].y; ++i) {
+    //     // RenderSegment(canvas, i, std::min(jmin, jmax), std::max(jmin, jmax), color);
+    //     while(el > 0.0f) {
+    //       jmin += delta_xl;
+    //       el -= 1.0f;
+    //     }
+    //     while(er > 0.0f) {
+    //       jmax += delta_xr;
+    //       er -= 1.0f;
+    //     }
+    //     el += ml;
+    //     er += mr;
+    //   }
+    // }
+    // if (points[1].y != points[2].y) {
+    //   jmin = jmax = points[2].x;
+    //   if (points[0].x < points[1].x) {
+    //     dxl = points[0].x - points[2].x;
+    //     dxr = points[1].x - points[2].x;
+    //     ml = std::abs((float)dxl / (float)(points[0].y - points[2].y));
+    //     mr = std::abs((float)dxr / (float)(points[1].y - points[2].y));
+    //   } else {
+    //     dxl = points[1].x - points[2].x;
+    //     dxr = points[0].x - points[2].x;
+    //     ml = std::abs((float)dxl / (float)(points[1].y - points[2].y));
+    //     mr = std::abs((float)dxr / (float)(points[0].y - points[2].y));
+    //   }
+    //   delta_xl = dxl > 0 ? 1 : -1;
+    //   delta_xr = dxr > 0 ? 1 : -1;
+    //   el = ml - 0.5f;
+    //   er = mr - 0.5f;
+    //   for (int i = points[2].y; i >= 0 && i >= points[1].y; --i) {
+    //     // RenderSegment(canvas, i, std::min(jmin, jmax), std::max(jmin, jmax), color);
+    //     while(el > 0.0f) {
+    //       jmin += delta_xl;
+    //       el -= 1.0f;
+    //     }
+    //     while(er > 0.0f) {
+    //       jmax += delta_xr;
+    //       er -= 1.0f;
+    //     }
+    //     el += ml;
+    //     er += mr;
+    //   }
+    // }
+  }
 };
 
 #endif //RASTERIZER_H

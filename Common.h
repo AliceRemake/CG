@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <list>
 #include <string>
 #include <filesystem>
 #include <bitset>

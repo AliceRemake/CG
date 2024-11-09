@@ -79,7 +79,7 @@ struct Light
 
 struct Scene
 {
-  std::vector<Model> models = {};
+  std::list<Model> models = {};
   std::vector<Light> lights = {};
 };
 

@@ -205,7 +205,7 @@ struct Pipeline
           glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
           vertex = t.xyz() / t.w;
         }
-        Rasterizer::RenderLine(canvas, line.vertices[0], line.vertices[1], line.color);
+        Rasterizer::RenderLine(canvas, glm::round(line.vertices[0].xy()), glm::round(line.vertices[1].xy()), line.color);
       }
     }
     
@@ -218,10 +218,15 @@ struct Pipeline
         vertex = t.xyz() / t.w;
       }
       // TODO: Implement This Function.
-      Rasterizer::RenderTriangleFill(canvas, triangle.vertices[0], triangle.vertices[1], triangle.vertices[2], triangle.colors[0]);
+      Rasterizer::RenderTriangleFill(
+        canvas,
+        glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()),
+        triangle.vertices[0].z, triangle.vertices[1].z, triangle.vertices[2].z,
+        triangle.colors[0], triangle.colors[1], triangle.colors[2]
+      );
       if (setting.show_wireframe)
       {
-        Rasterizer::RenderTriangleLine(canvas, triangle.vertices[0], triangle.vertices[1], triangle.vertices[2], glm::vec3(1.0f));
+        Rasterizer::RenderTriangleLine(canvas, glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()), glm::vec3(1.0f));
       }
     }
   }

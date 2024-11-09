@@ -21,11 +21,6 @@
 struct Initializer
 {
 
-  static void Init(Model& model, const char* filename) NOEXCEPT
-  {
-    model = Loader::LoadObj(filename);
-  }
-
   static void ReSet(Model& model) NOEXCEPT
   {
     model.scale = glm::vec3(1.0f);
@@ -90,25 +85,25 @@ struct Initializer
       Fatal("Can Not Init Canvas.\n");  
     }
     canvas.pixels = (uint32_t*)canvas.surface->pixels;
-    canvas.zbuffer = new float*[width];
-    for (int i = 0; i < width; ++i)
+    canvas.zbuffer = new float*[height];
+    for (int i = 0; i < height; ++i)
     {
-      canvas.zbuffer[i] = new float[height];
+      canvas.zbuffer[i] = new float[width];
     }
   }
 
   static void ReSet(const Canvas& canvas) NOEXCEPT
   {
     // COMMENT: Clear Surface.
-    if (!SDL_ClearSurface(canvas.surface, 0.0f, 0.0f, 0.0f, 0.0f))
-    {
-      Fatal("Can Not Clear Canvas.\n");  
-    }
+    SDL_ClearSurface(canvas.surface, 0.0f, 0.0f, 0.0f, 0.0f);
     
     // COMMENT: Clear ZBuffer.
-    for (int i = 0; i < canvas.width; ++i)
+    for (int i = 0; i < canvas.height; ++i)
     {
-      memset(canvas.zbuffer, 0XFF, sizeof(float) * canvas.height);
+      for (int j = 0; j < canvas.width; ++j)
+      {
+        canvas.zbuffer[i][j] = 1E9;
+      }
     }
   }
 

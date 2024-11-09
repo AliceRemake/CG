@@ -19,21 +19,30 @@
 // COMMENT: Loader System. For Loading Model Files.
 struct Loader
 {
-
+  enum Result
+  {
+    SUCCESS,
+    ERROR_OPEN_FILE,
+    ERROR_CLOSE_FILE,
+    ERROR_READ_FILE,
+  };
+  
   // WARN: Very Simple Code For Loading .obj File. May Have Bugs.
-  static Model LoadObj(const char* filename) NOEXCEPT
+  static Result LoadObj(const char* filename, Model& model) NOEXCEPT
   {
 
     // COMMENT: Open File.
     FILE* fp = fopen(filename, "rb");
     if (fp == nullptr)
     {
-      Fatal("Can Not Open File %s\n", filename);
+      return ERROR_OPEN_FILE;
     }
 
-    Model model;
     model.name = std::filesystem::path(filename).filename().string();
     // COMMENT: Pre Allocate Memories.
+    model.vertices.clear();
+    model.normals.clear();
+    model.indices.clear();
     model.vertices.reserve(4096);
     model.normals.reserve(4096);
     model.indices.reserve(4096 * 3);
@@ -80,14 +89,14 @@ struct Loader
       // COMMENT: Unsupported Keywords.
       else
       {
-        Fatal("Unknown Format In .obj File %s\n", filename);
+        return ERROR_READ_FILE;
       }
     }
 
     // COMMENT: Close File.
     if (fclose(fp) == EOF)
     {
-      Fatal("Can Not Close File %s\n", filename);  
+      return ERROR_CLOSE_FILE;
     }
 
     // COMMENT: Auto Translate To Center And Scale To 1
@@ -107,7 +116,7 @@ struct Loader
     model.normals.shrink_to_fit();
     model.indices.shrink_to_fit();
 
-    return model;
+    return SUCCESS;
   }
   
 };
