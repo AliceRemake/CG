@@ -109,8 +109,8 @@ struct Initializer
 
   static void Init(Setting& setting) NOEXCEPT
   {
-    setting.show_normal = true;
-    setting.show_wireframe = true;
+    setting.show_normal = false;
+    setting.show_wireframe = false;
     setting.enable_cull = true;
     setting.enable_clip = true;
   }
