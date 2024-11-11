@@ -195,7 +195,16 @@ struct Controller
 
       if (ImGui::Button("Reset Camera", ImVec2(ImGui::GetWindowWidth() - 25.0f, 0.0f)))
       {
-        Initializer::ReSet(camera);
+        camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
+        camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+        camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+        camera.right = glm::vec3(1.0f, 0.0f, 0.0f);
+        camera.yaw = glm::radians(180.0f);
+        camera.pitch = 0.0f;
+        camera.fov = glm::radians(75.0f);
+        camera.aspect = 4.0f / 3.0f;
+        camera.near = 0.1f;
+        camera.far = 10.0f;
       }
 
       ImGui::Unindent(10.0f);
@@ -318,7 +327,9 @@ struct Controller
 
           if (ImGui::Button("Reset"))
           {
-            Initializer::ReSet(*it);
+            it->scale = glm::vec3(1.0f);
+            it->rotate = glm::vec3(0.0f);
+            it->translate = glm::vec3(0.0f);
           }
           ImGui::SameLine();
           if (ImGui::Button("UnLoad"))

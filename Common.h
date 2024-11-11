@@ -65,7 +65,7 @@
       fmt::fprintf(stderr, __VA_ARGS__);                                                  \
     } while (0)
 #else
-  #define Info(fmt, ...) ((void)0)
+  #define Info(...)
 #endif
 
 #if LOG_LEVEL_WARN >= LOG_LEVEL
@@ -75,7 +75,7 @@
       fmt::fprintf(stderr, __VA_ARGS__);                                                  \
     } while (0)
 #else
-  #define Warn(fmt, ...) ((void)0)
+  #define Warn(...)
 #endif
 
 #define Fatal(...)                                                                       \
@@ -86,9 +86,15 @@
   } while (0)
 
 #ifdef NDEBUG
-  #define ASSERT(exp) do { ((void)exp); } while (0)
+  #define DEBUGBREAK()
 #else
-  #define ASSERT(exp) do { assert(exp); } while (0)
+  #define DEBUGBREAK() __debugbreak()
+#endif
+
+#ifdef NDEBUG
+  #define ASSERT(exp) (void)exp
+#else
+  #define ASSERT(exp) do { if(!(exp)) DEBUGBREAK(); } while (0)
 #endif
 
 #endif //COMMON_H

@@ -15,60 +15,91 @@
 
 #include <Common.h>
 
+// COMMENT: Basic Data Structures. All Mathematics. No Geometry Meaning.
 using Color = glm::vec3;
-using Vector = glm::vec3;
 using Vertex = glm::vec3;
+using Vector = glm::vec3;
 using Normal = glm::vec3;
 
+// COMMENT: Geometry Primitives For Rendering.
 struct Line
 {
-  Vertex vertices[2] = {};
-  Color color        = {};
+  uint32_t vertices[2] = {};
+  Color color = {};
 };
 
-struct Triangle
+// struct Triangle
+// {
+//   uint32_t vertices[3] = {};
+//   Color color = {};
+// };
+
+struct Polygon
 {
-  Vertex vertices[3] = {};
-  Normal colors[3]   = {};
+  std::vector<uint32_t> vertices = {};
+  Color color = {};
 };
 
+// COMMENT: Axis-Aligned-Bounding-Box.
 struct AABB
 {
   Vertex vmin;
   Vertex vmax;
 
-  static AABB From(const Line& line) NOEXCEPT
+  static AABB From(const std::vector<Vertex>& vertices, const Line& line) NOEXCEPT
   {
     return AABB {
-      .vmin = glm::min(line.vertices[0], line.vertices[1]),
-      .vmax = glm::max(line.vertices[0], line.vertices[1]),
+      .vmin = glm::min(vertices[line.vertices[0]], vertices[line.vertices[1]]),
+      .vmax = glm::max(vertices[line.vertices[0]], vertices[line.vertices[1]]),
     };
   }
 
-  static AABB From(const Triangle& triangle) NOEXCEPT
+  // static AABB From(const std::vector<Vertex>& vertices, const Triangle& triangle) NOEXCEPT
+  // {
+  //   return AABB {
+  //     .vmin = glm::min(glm::min(vertices[triangle.vertices[0]], vertices[triangle.vertices[1]]), vertices[triangle.vertices[2]]),
+  //     .vmax = glm::max(glm::max(vertices[triangle.vertices[0]], vertices[triangle.vertices[1]]), vertices[triangle.vertices[2]]),
+  //   };
+  // }
+
+  static AABB From(const std::vector<Vertex>& vertices, const struct Polygon& polygon) NOEXCEPT
   {
-    return AABB {
-      .vmin = glm::min(glm::min(triangle.vertices[0], triangle.vertices[1]), triangle.vertices[2]),
-      .vmax = glm::max(glm::max(triangle.vertices[0], triangle.vertices[1]), triangle.vertices[2]),
-    };
+    AABB aabb = { .vmin = glm::vec3(1E9), .vmax = glm::vec3(-1E9) };
+    for (const auto& vertex : polygon.vertices)
+    {
+      aabb.vmin = glm::min(aabb.vmin, vertices[vertex]);  
+      aabb.vmax = glm::max(aabb.vmax, vertices[vertex]);  
+    }
+    return aabb;
   }
 
 };
 
+// COMMENT: 3D Model.
 struct Model
 {
   struct Index
   {
-    uint32_t vertex;
-    uint32_t normal;
-  };  
-  std::string name             = {};
+    uint32_t vertex  = (uint32_t)-1;
+    uint32_t texture = (uint32_t)-1;
+    uint32_t normal  = (uint32_t)-1;
+  };
+
+  std::string name = {};
+  
+  // COMMENT: Raw Data Read From .obj File.
   std::vector<Vertex> vertices = {};
+  std::vector<Vertex> textures = {};
   std::vector<Normal> normals  = {};
   std::vector<Index> indices   = {};
-  glm::vec3 scale              = {};
-  glm::vec3 rotate             = {};
-  glm::vec3 translate          = {};
+
+  // COMMENT: Number Of Vertices In A Polygon.
+  std::vector<uint32_t> polygons = {};
+  
+  // COMMENT: Transformations.
+  glm::vec3 scale     = {};
+  glm::vec3 rotate    = {};
+  glm::vec3 translate = {};
 };
 
 struct Light
@@ -83,6 +114,7 @@ struct Scene
   std::vector<Light> lights = {};
 };
 
+// COMMENT: Classic FPS Style Camera.
 struct Camera
 {
   Vertex position  = {};
@@ -97,25 +129,39 @@ struct Camera
   float far        = {};
 };
 
+struct HZBufferNode;
+
+// COMMENT: Canvas For Rendering. (aka Viewport In Hardware).
 struct Canvas
 {
   int offsetx                                        = {};
   int offsety                                        = {};
   int width                                          = {};
   int height                                         = {};
+  Color color                                        = {};
   uint32_t* pixels                                   = {};
   float** zbuffer                                    = {};
+  HZBufferNode* h_zbuffer_tree                       = {};
   SDL_Window* window                                 = {};
   SDL_Surface* surface                               = {};
   const SDL_PixelFormatDetails* pixel_format_details = {};
 };
 
+// COMMENT: Setting Of The Application.
 struct Setting
 {
+  enum Algorithm {
+    ZBuffer,
+    ScanLine,
+    HZBuffer,
+    HZBufferHAABB,
+  };
+  
   bool show_normal    = {};
   bool show_wireframe = {};
   bool enable_cull    = {};
   bool enable_clip    = {};
+  Algorithm algorithm = {};
 };
 
 #endif //ENTITY_H

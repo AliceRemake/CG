@@ -36,8 +36,8 @@ struct Debugger
     (void)line;
     #else
     fmt::printf("Line:\n");
-    fmt::printf("  Vertex 0: "); Dump(line.vertices[0]);
-    fmt::printf("  Vertex 1: "); Dump(line.vertices[1]);
+    // fmt::printf("  Vertex 0: "); Dump(line.vertices[0]);
+    // fmt::printf("  Vertex 1: "); Dump(line.vertices[1]);
     fmt::printf("  Color  0: "); Dump(line.color);
     fflush(stdout);
     #endif
@@ -49,12 +49,13 @@ struct Debugger
     (void)triangle;
     #else
     fmt::printf("Triangle:\n");
-    fmt::printf("  Vertex 0: "); Dump(triangle.vertices[0]);
-    fmt::printf("  Vertex 1: "); Dump(triangle.vertices[1]);
-    fmt::printf("  Vertex 2: "); Dump(triangle.vertices[2]);
-    fmt::printf("  Color  0: "); Dump(triangle.colors[0]);
-    fmt::printf("  Color  1: "); Dump(triangle.colors[1]);
-    fmt::printf("  Color  2: "); Dump(triangle.colors[2]);
+    (void)triangle;
+    // fmt::printf("  Vertex 0: "); Dump(triangle.vertices[0]);
+    // fmt::printf("  Vertex 1: "); Dump(triangle.vertices[1]);
+    // fmt::printf("  Vertex 2: "); Dump(triangle.vertices[2]);
+    // fmt::printf("  Color  0: "); Dump(triangle.colors[0]);
+    // fmt::printf("  Color  1: "); Dump(triangle.colors[1]);
+    // fmt::printf("  Color  2: "); Dump(triangle.colors[2]);
     fflush(stdout);
     #endif
   }
@@ -142,11 +143,11 @@ struct Debugger
     fmt::printf("  OffsetY            : %d\n", canvas.offsety);
     fmt::printf("  Width              : %d\n", canvas.width);
     fmt::printf("  Height             : %d\n", canvas.height);
-    fmt::printf("  Pixels             : 0X%P\n", (void*)canvas.pixels);
-    fmt::printf("  ZBuffer            : 0X%P\n", (void*)canvas.zbuffer);
-    fmt::printf("  Window             : 0X%P\n", (void*)canvas.window);
-    fmt::printf("  Surface            : 0X%P\n", (void*)canvas.surface);
-    fmt::printf("  PixelFormatDetails : 0X%P\n", (void*)canvas.pixel_format_details);
+    fmt::printf("  Pixels             : 0x%P\n", (void*)canvas.pixels);
+    fmt::printf("  ZBuffer            : 0x%P\n", (void*)canvas.zbuffer);
+    fmt::printf("  Window             : 0x%P\n", (void*)canvas.window);
+    fmt::printf("  Surface            : 0x%P\n", (void*)canvas.surface);
+    fmt::printf("  PixelFormatDetails : 0x%P\n", (void*)canvas.pixel_format_details);
     fflush(stdout);
     #endif
   }
@@ -164,6 +165,20 @@ struct Debugger
     fflush(stdout);
     #endif
   }
+
+  // static void Dump(const HZBufferNode* node) NOEXCEPT
+  // {
+  //   #ifdef NDEBUG
+  //   (void)node;
+  //   #else
+  //   fmt::printf("HZBufferNode:\n");
+  //   fmt::printf("  ll : 0x%P\n", node->ll);
+  //   fmt::printf("  lr : 0x%P\n", node->lr);
+  //   fmt::printf("  ul : 0x%P\n", node->ul);
+  //   fmt::printf("  ur : 0x%P\n", node->ur);
+  //   fflush(stdout);
+  //   #endif
+  // }
   
 };
 

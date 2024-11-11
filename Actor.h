@@ -15,6 +15,7 @@
 
 #include <Common.h>
 #include <Entity.h>
+#include <Accelerator.h>
 
 // COMMENT: Actor System. For Updating Entities And Handling Events.
 struct Actor
@@ -61,7 +62,7 @@ struct Actor
     {
       constexpr float ratio = 0.01f; 
       m.rotate.y += ratio * event->motion.xrel;
-      m.rotate.x -= ratio * event->motion.yrel;
+      m.rotate.x += ratio * event->motion.yrel;
     }
   }
   
@@ -101,7 +102,7 @@ struct Actor
     {
       camera.yaw = camera.yaw - 0.001f * event->motion.xrel;
       // NOTE: Clamp Pitch In [-89.0f, 89.0f].
-      camera.pitch = std::clamp(camera.pitch + 0.001f * event->motion.yrel, glm::radians(-89.0f), glm::radians(89.0f));
+      camera.pitch = std::clamp(camera.pitch - 0.001f * event->motion.yrel, glm::radians(-89.0f), glm::radians(89.0f));
     }
   }
   

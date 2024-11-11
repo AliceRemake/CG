@@ -52,7 +52,7 @@ struct Transformer
 
   static glm::mat4 View(const Camera& camera) NOEXCEPT
   {
-    return glm::lookAt(camera.position, camera.position + camera.direction, glm::vec3{0.0f, 1.0f, 0.0f});
+    return glm::lookAt(camera.position, camera.position + camera.direction, camera.up);
   }
   
   static glm::mat4 Project(const Camera& camera) NOEXCEPT
@@ -67,7 +67,7 @@ struct Transformer
     const int& h = canvas.height;
     return glm::mat4 {
       glm::vec4{      w/2.0f,        0.0f, 0.0f, 0.0f },
-      glm::vec4{        0.0f,      h/2.0f, 0.0f, 0.0f },
+      glm::vec4{        0.0f,     -h/2.0f, 0.0f, 0.0f },
       glm::vec4{        0.0f,        0.0f, 1.0f, 0.0f },
       glm::vec4{ w/2.0f-0.5f, h/2.0f-0.5f, 0.0f, 1.0f },
     };

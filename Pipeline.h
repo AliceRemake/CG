@@ -32,29 +32,31 @@ struct Pipeline
   // 6. Render Primitives.
   static void Render(const Setting& setting, const Scene& scene, const Model& model, const Camera& camera, const Canvas& canvas, const Shader::Config& config) NOEXCEPT
   {
-    // COMMENT: Buffers Used In Rendering.    
+    // COMMENT: Buffers Used In Rendering.
     static std::vector<Light> lights;
     static std::vector<Vertex> vertices;
     static std::vector<Normal> normals;
     static std::vector<Line> lines;
-    static std::vector<Triangle> triangles;
-
+    // static std::vector<Triangle> triangles;
+    static std::vector<struct Polygon> polygons;
+    
     // COMMENT: Clear All Data From Last Frame.
     lights.clear();
     vertices.clear();
     normals.clear();
     lines.clear();
-    triangles.clear();
+    // triangles.clear();
+    polygons.clear();
 
     // COMMENT: Pre Allocate Memories.
     lights.resize(scene.lights.size());
     vertices.resize(model.vertices.size());
-    normals.resize(model.normals.size());
+    // normals.resize(model.normals.size());
 
     // COMMENT: Pre Calculate Transform Matrices.
     const glm::mat4 view = Transformer::View(camera);
     const glm::mat4 vertex_matrix = view * Transformer::Model(model);
-    const glm::mat4 normal_matrix = glm::transpose(glm::inverse(vertex_matrix));
+    // const glm::mat4 normal_matrix = glm::transpose(glm::inverse(vertex_matrix));
 
     // COMMENT: Transform Lights From World Space To Camera Space.
     for (size_t i = 0; i < lights.size(); ++i) {
@@ -69,32 +71,30 @@ struct Pipeline
       vertices[i] = vertex.xyz() / vertex.w;
     }
 
-    // COMMENT: Transform Vertices From Model Space To Camera Space.
-    for (size_t i = 0; i < normals.size(); ++i) {
-      glm::vec4 normal = normal_matrix * glm::vec4(model.normals[i], 0.0f);
-      normals[i] = normal.xyz();
-    }
-
     // COMMENT: Pre Allocate Memories.
-    lines.reserve(model.indices.size());
-    triangles.reserve(model.indices.size());
+    lines.reserve(model.polygons.size());
+    // triangles.reserve(model.polygons.size());
+    polygons.reserve(model.polygons.size());
 
-    // COMMENT: Assembly Primitives eg: Lines, Triangles etc.
-    for (size_t i = 0; i < model.indices.size(); i += 3) {
+    // COMMENT: Assembly Geometry Primitives. eg: Lines, Triangles, Polygons.
+    for (size_t i = 0, j = 0; i < model.polygons.size(); j += model.polygons[i], ++i)
+    {
+      ASSERT(model.polygons[i] >= 3);
 
-      // COMMENT: Assembly Triangle Vertices.
-      Triangle triangle {
-        .vertices = {
-          vertices[model.indices[i+0].vertex],
-          vertices[model.indices[i+1].vertex],
-          vertices[model.indices[i+2].vertex],
-        },
-      };
+      struct Polygon polygon;
 
-      // COMMENT: Calculate Center And Normal Of The Triangle.
-      const glm::vec3 c = (triangle.vertices[0] + triangle.vertices[1] + triangle.vertices[2]) / 3.0f;
-      const glm::vec3 u = triangle.vertices[0] - triangle.vertices[1];
-      const glm::vec3 v = triangle.vertices[1] - triangle.vertices[2];
+      // COMMENT: Assembly Polygon Vertices.
+      auto c = glm::vec3(0.0f);
+      polygon.vertices.reserve(model.polygons[i]);
+      for (size_t k = 0; k < model.polygons[i]; ++k)
+      {
+        polygon.vertices.emplace_back(model.indices[j+k].vertex);
+        c += vertices[polygon.vertices.back()];
+      }
+
+      c /= model.polygons[i];
+      const glm::vec3 u = vertices[polygon.vertices[0]] - vertices[polygon.vertices[1]];
+      const glm::vec3 v = vertices[polygon.vertices[1]] - vertices[polygon.vertices[2]];
       const glm::vec3 n = glm::normalize(glm::cross(u, v));
 
       // COMMENT: Camera Is At Origin Point Now. Cull Triangles Back To Us.
@@ -104,49 +104,38 @@ struct Pipeline
         }
       }
 
-      // COMMENT: Use Blinn-Phong Shading Model To Calculate Colors Of The Triangle's Vertices.
-      triangle.colors[0] = Shader::BlinnPhong(lights, triangle.vertices[0], normals[model.indices[i+0].normal], config);
-      triangle.colors[1] = Shader::BlinnPhong(lights, triangle.vertices[1], normals[model.indices[i+1].normal], config);
-      triangle.colors[2] = Shader::BlinnPhong(lights, triangle.vertices[2], normals[model.indices[i+2].normal], config);
+      // COMMENT: Use Blinn-Phong Shading Model To Calculate Color Of The Polygon.
+      polygon.color = Shader::BlinnPhong(lights, c, n, config);
 
       // COMMENT: If We Want To Draw Face Normal, Assembly Corresponding Line.
       if (setting.show_normal)
       {
-        lines.emplace_back(Line{c, c + 0.1f * n, Color(0.0f, 1.0f, 0.0f)});
+        vertices.emplace_back(c);
+        vertices.emplace_back(c + 0.1f * n);
+        lines.emplace_back(Line{ (uint32_t)vertices.size() - 2, (uint32_t)vertices.size() - 1, Color(0.0f, 1.0f, 0.0f)});
       }
-      
-      // COMMENT: The Properties Of A Triangle Are Calculated. Push In.
-      triangles.emplace_back(triangle);
+        
+      // COMMENT: The Properties Of A Polygon Are Calculated. Push In.
+      polygons.emplace_back(std::move(polygon));
     }
-
+    
     // COMMENT: Pre Calculate Transform Matrices.
     glm::mat4 project = Transformer::Project(camera);
 
-    // COMMENT: Transform Lines From Camera Space To [-1, 1]^3
-    for (auto& line : lines) {
-      for (auto& vertex : line.vertices) {
-        glm::vec4 t = project * glm::vec4(vertex, 1.0f);
-        vertex = t.xyz() / t.w;
-      }
-    }
-    
-    // COMMENT: Transform Triangles From Camera Space To [-1, 1]^3
-    for (auto& triangle : triangles) {
-      for (auto& vertex : triangle.vertices) {
-        glm::vec4 t = project * glm::vec4(vertex, 1.0f);
-        vertex = t.xyz() / t.w;
-      }
+    for (auto& vertex : vertices)
+    {
+      glm::vec4 t = project * glm::vec4(vertex, 1.0f);
+      vertex = t.xyz() / t.w;
     }
 
     if (setting.enable_clip)
     {
-      if (setting.show_normal)
-      {
+      if (!lines.empty()) {
         // COMMENT: Util Function For Judging Whether A Line Should Be Clipped.
-        const auto clip = [](const Line& line) -> bool
+        const auto clip = [&](const Line& line) -> bool
         {
           // COMMENT: If The AABB Has No Intersection With [-1, 1]^3, Then Clip.
-          AABB aabb = AABB::From(line);
+          AABB aabb = AABB::From(vertices, line);
           glm::vec3 v = glm::min(glm::abs(aabb.vmin), glm::abs(aabb.vmax));
           return !(v.x < 1.0f && v.y < 1.0f && v.z < 1.0f);
         };
@@ -158,7 +147,7 @@ struct Pipeline
           while(!clip(lines[i]) && i < j) ++i;
           while(clip(lines[j]) && i < j) --j;
           if (i >= j) break;
-          std::swap(triangles[i], triangles[j]);
+          std::swap(lines[i], lines[j]);
           ++i, --j;
         }
         
@@ -166,70 +155,173 @@ struct Pipeline
         if (clip(lines[i])) lines.resize(i);
         else lines.resize(i + 1);
       }
+      if (!polygons.empty()) {
+        // COMMENT: Util Function For Judging Whether A Polygon Should Be Clipped.
+        const auto clip = [&](const struct Polygon& polygon) -> bool
+        {
+          // COMMENT: If The AABB Has No Intersection With [-1, 1]^3, Then Clip.
+          AABB aabb = AABB::From(vertices, polygon);
+          glm::vec3 v = glm::min(glm::abs(aabb.vmin), glm::abs(aabb.vmax));
+          return !(v.x < 1.0f && v.y < 1.0f && v.z < 1.0f);
+        };
 
-      // COMMENT: Util Function For Judging Whether A Triangle Should Be Clipped.
-      const auto clip = [](const Triangle& triangle) -> bool
-      {
-        // COMMENT: If The AABB Has No Intersection With [-1, 1]^3, Then Clip.
-        AABB aabb = AABB::From(triangle);
-        glm::vec3 v = glm::min(glm::abs(aabb.vmin), glm::abs(aabb.vmax));
-        return !(v.x < 1.0f && v.y < 1.0f && v.z < 1.0f);
-      };
-
-      // COMMENT: Find The First Clipped And The Last UnClipped. Swap Them And Continue.
-      int i = 0, j = triangles.size() - 1;
-      while(i < j)
-      {
-        while(!clip(triangles[i]) && i < j) ++i;
-        while(clip(triangles[j]) && i < j) --j;
-        if (i >= j) break;
-        std::swap(triangles[i], triangles[j]);
-        ++i, --j;
+        // COMMENT: Find The First Clipped And The Last UnClipped. Swap Them And Continue.
+        int i = 0, j = polygons.size() - 1;
+        while(i < j)
+        {
+          while(!clip(polygons[i]) && i < j) ++i;
+          while(clip(polygons[j]) && i < j) --j;
+          if (i >= j) break;
+          std::swap(polygons[i], polygons[j]);
+          ++i, --j;
+        }
+        
+        // COMMENT: Re Calculate The Size.
+        if (clip(polygons[i])) polygons.resize(i);
+        else polygons.resize(i + 1);
       }
-      
-      // COMMENT: Re Calculate The Size.
-      if (clip(triangles[i])) triangles.resize(i);
-      else triangles.resize(i + 1);
     }
 
     // COMMENT: Pre Calculate Transform Matrices.
     glm::mat4 viewport = Transformer::Viewport(canvas);
 
-    if (setting.show_normal)
+    for (auto& vertex : vertices)
     {
-      // COMMENT: Transform Each Line From [-1, 1]^3 To Screen Space. Then Render It.
-      for (auto& line : lines)
+      glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
+      vertex = t.xyz() / t.w;
+    }
+
+    Rasterizer::RenderPolygonsScanLine(canvas, vertices, polygons);
+    
+    for (auto& line : lines)
+    {
+      Rasterizer::RenderLine(canvas, vertices, line);
+    }
+
+    for (auto& polygon : polygons)
+    {
+      if (setting.show_wireframe)
       {
-        for (auto& vertex : line.vertices)
-        {
-          glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
-          vertex = t.xyz() / t.w;
-        }
-        Rasterizer::RenderLine(canvas, glm::round(line.vertices[0].xy()), glm::round(line.vertices[1].xy()), line.color);
+        Rasterizer::RenderPolygonWireframe(canvas, vertices, polygon);
       }
     }
     
-    for (auto& triangle : triangles)
-    {
-      // COMMENT: Transform Each Triangle From [-1, 1]^3 To Screen Space. Then Render It.
-      for (auto& vertex : triangle.vertices)
-      {
-        glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
-        vertex = t.xyz() / t.w;
-      }
-      Rasterizer::RenderTriangleFill(
-        canvas,
-        glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()),
-        triangle.vertices[0].z, triangle.vertices[1].z, triangle.vertices[2].z,
-        triangle.colors[0], triangle.colors[1], triangle.colors[2]
-      );
-      if (setting.show_wireframe)
-      {
-        Rasterizer::RenderTriangleLine(canvas, glm::round(triangle.vertices[0].xy()), glm::round(triangle.vertices[1].xy()), glm::round(triangle.vertices[2].xy()), glm::vec3(0.0f));
-      }
-    }
+
   }
   
 };
 
 #endif //PIPELINE_H
+
+
+// COMMENT: Transform Normals From Model Space To Camera Space.
+// for (size_t i = 0; i < normals.size(); ++i) {
+//   glm::vec4 normal = normal_matrix * glm::vec4(model.normals[i], 0.0f);
+//   normals[i] = normal.xyz();
+// }
+// {
+//   // COMMENT: Util Function For Judging Whether A Triangle Should Be Clipped.
+//   const auto clip = [&](const Triangle& triangle) -> bool
+//   {
+//     // COMMENT: If The AABB Has No Intersection With [-1, 1]^3, Then Clip.
+//     AABB aabb = AABB::From(vertices, triangle);
+//     glm::vec3 v = glm::min(glm::abs(aabb.vmin), glm::abs(aabb.vmax));
+//     return !(v.x < 1.0f && v.y < 1.0f && v.z < 1.0f);
+//   };
+//
+//   // COMMENT: Find The First Clipped And The Last UnClipped. Swap Them And Continue.
+//   int i = 0, j = triangles.size() - 1;
+//   while(i < j)
+//   {
+//     while(!clip(triangles[i]) && i < j) ++i;
+//     while(clip(triangles[j]) && i < j) --j;
+//     if (i >= j) break;
+//     std::swap(triangles[i], triangles[j]);
+//     ++i, --j;
+//   }
+//   
+//   // COMMENT: Re Calculate The Size.
+//   if (clip(triangles[i])) triangles.resize(i);
+//   else triangles.resize(i + 1);
+// }
+// for (auto& triangle : triangles)
+// {
+//   if (setting.show_wireframe)
+//   {
+//     Rasterizer::RenderTriangleWireframe(canvas, vertices, triangle);
+//   }
+// }
+      // // COMMENT: This Is A Triangle.
+      // if (model.polygons[i] == 3)
+      // {
+      //   // COMMENT: Assembly Triangle Vertices.
+      //   Triangle triangle {
+      //     .vertices = {
+      //       model.indices[j+0].vertex,
+      //       model.indices[j+1].vertex,
+      //       model.indices[j+2].vertex,
+      //     },
+      //   };
+      //
+      //   // COMMENT: Calculate Center And Normal Of The Triangle.
+      //   const glm::vec3 c = (vertices[triangle.vertices[0]] + vertices[triangle.vertices[1]] + vertices[triangle.vertices[2]]) / 3.0f;
+      //   const glm::vec3 u = vertices[triangle.vertices[0]] - vertices[triangle.vertices[1]];
+      //   const glm::vec3 v = vertices[triangle.vertices[1]] - vertices[triangle.vertices[2]];
+      //   const glm::vec3 n = glm::normalize(glm::cross(u, v));
+      //
+      //   // COMMENT: Camera Is At Origin Point Now. Cull Triangles Back To Us.
+      //   if (setting.enable_cull) {
+      //     if (glm::dot(c, n) >= 0.0f) {
+      //       continue;
+      //     }
+      //   }
+      //   
+      //   // COMMENT: Departure
+      //   // COMMENT: Use Blinn-Phong Shading Model To Calculate Colors Of The Triangle's Vertices.
+      //   // triangle.colors[0] = Shader::BlinnPhong(lights, triangle.vertices[0], normals[model.indices[i+0].normal], config);
+      //   // triangle.colors[1] = Shader::BlinnPhong(lights, triangle.vertices[1], normals[model.indices[i+1].normal], config);
+      //   // triangle.colors[2] = Shader::BlinnPhong(lights, triangle.vertices[2], normals[model.indices[i+2].normal], config);
+      //
+      //   // COMMENT: Use Blinn-Phong Shading Model To Calculate Color Of The Triangle.
+      //   triangle.color = Shader::BlinnPhong(lights, c, n, config);
+      //   
+      //   // COMMENT: If We Want To Draw Face Normal, Assembly Corresponding Line.
+      //   if (setting.show_normal)
+      //   {
+      //     vertices.emplace_back(c);
+      //     vertices.emplace_back(c + 0.1f * n);
+      //     lines.emplace_back(Line{ (uint32_t)vertices.size() - 2, (uint32_t)vertices.size() - 1, Color(0.0f, 1.0f, 0.0f)});
+      //   }
+      //   
+      //   // COMMENT: The Properties Of A Triangle Are Calculated. Push In.
+      //   triangles.emplace_back(triangle);
+      //   
+      // }
+      // // COMMENT: This Is A Polygon.
+      // else
+      // {
+      // }
+
+    // // COMMENT: Transform Lines From Camera Space To [-1, 1]^3
+    // for (auto& line : lines) {
+    //   for (auto& vertex : line.vertices) {
+    //     glm::vec4 t = project * glm::vec4(vertex, 1.0f);
+    //     vertex = t.xyz() / t.w;
+    //   }
+    // }
+    //
+    // // COMMENT: Transform Triangles From Camera Space To [-1, 1]^3
+    // for (auto& triangle : triangles) {
+    //   for (auto& vertex : triangle.vertices) {
+    //     glm::vec4 t = project * glm::vec4(vertex, 1.0f);
+    //     vertex = t.xyz() / t.w;
+    //   }
+    // }
+    //
+    // // COMMENT: Transform Polygons From Camera Space To [-1, 1]^3
+    // for (auto& polygon : polygons) {
+    //   for (auto& vertex : polygon.vertices) {
+    //     glm::vec4 t = project * glm::vec4(vertex, 1.0f);
+    //     vertex = t.xyz() / t.w;
+    //   }
+    // }

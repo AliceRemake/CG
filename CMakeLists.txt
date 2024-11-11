@@ -26,6 +26,7 @@ PUBLIC
 TARGET_SOURCES(CGHomework
 PUBLIC
   main.cpp
+  Accelerator.h
   Controller.h
   Actor.h
   Pipeline.h

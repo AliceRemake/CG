@@ -43,7 +43,7 @@ int main(const int argc, char** argv)
   }
 
   // COMMENT: Create The Controller Window.
-  SDL_Window* controller_window = SDL_CreateWindow("Controller", CONTROLLER_WIDTH, CONTROLLER_HEIGHT, SDL_WINDOW_UTILITY | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN);
+  SDL_Window* controller_window = SDL_CreateWindow("Controller", CONTROLLER_WIDTH, CONTROLLER_HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN);
   if (controller_window == nullptr)
   {
     Fatal("Can Not Create Controller Window! %s\n", SDL_GetError());
@@ -57,25 +57,54 @@ int main(const int argc, char** argv)
   }
 
   // COMMENT: Init Some Stuffs.
-  Initializer::Init(canvas, 0, 0, RENDERER_WIDTH, RENDERER_HEIGHT, renderer_window);
-  Initializer::Init(camera);
-  Initializer::Init(setting);
+  setting.show_normal = false;
+  setting.show_wireframe = false;
+  setting.enable_cull = true;
+  setting.enable_clip = true;
+  setting.algorithm = Setting::ZBuffer;
+
+  canvas.offsetx = 0;
+  canvas.offsety = 0;
+  canvas.width = RENDERER_WIDTH;
+  canvas.height = RENDERER_HEIGHT;
+  canvas.window = renderer_window;
+  canvas.surface = SDL_GetWindowSurface(canvas.window);
+  canvas.pixel_format_details = SDL_GetPixelFormatDetails(canvas.surface->format);
+  canvas.pixels = (uint32_t*)canvas.surface->pixels;
+  canvas.zbuffer = new float*[canvas.height];
+  for (int i = 0; i < canvas.height; ++i)
+  {
+    canvas.zbuffer[i] = new float[canvas.width];
+  }
+  canvas.h_zbuffer_tree = Accelerator::BuildHZBufferTree(canvas, 0, canvas.height-1, 0, canvas.width-1);
+  
+  camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
+  camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+  camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+  camera.right = glm::vec3(1.0f, 0.0f, 0.0f);
+  camera.yaw = glm::radians(180.0f);
+  camera.pitch = 0.0f;
+  camera.fov = glm::radians(75.0f);
+  camera.aspect = 4.0f / 3.0f;
+  camera.near = 0.1f;
+  camera.far = 10.0f;
   
   // COMMENT: Set Up Basic Scene.
   Model m;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "tokyo.obj").string().c_str(), m);
+  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "teapot.obj").string().c_str(), m);
   scene.models.emplace_back(std::move(m));
   scene.lights.emplace_back(Light {
     .position = glm::vec3(0.0f, 2.0f, 2.0f),
     .color = glm::vec3(1.0f),
   });
+  selected_model = &scene.models.front();
   
   // COMMENT: Set Up Controller.
   Controller::SetUp(controller_window, renderer);
   
   // COMMENT: Everything Is Ready. Show The Window.
   SDL_ShowWindow(renderer_window);
-  SDL_ShowWindow(controller_window);
+  // SDL_ShowWindow(controller_window);
   
   // COMMENT: Main Loop.
   bool running = true;
@@ -116,9 +145,7 @@ int main(const int argc, char** argv)
     }
 
     // COMMENT: First. Clear Data From Last Frame.
-    SDL_SetRenderDrawColorFloat(renderer, 0.40f, 0.45f, 0.50f, 1.0f);
-    SDL_RenderClear(renderer);
-    SDL_ClearSurface(canvas.surface, 0.40f, 0.45f, 0.50f, 1.0f);
+    SDL_ClearSurface(canvas.surface, 0.0f, 0.0f, 0.0f, 0.0f);
     for (int i = 0; i < canvas.height; ++i)
     {
       for (int j = 0; j < canvas.width; ++j)
@@ -126,6 +153,10 @@ int main(const int argc, char** argv)
         canvas.zbuffer[i][j] = 1E9;
       }
     }
+    // if (setting.h_zbuffer_acc)
+    // {
+    //   Accelerator::ReSetHZBufferTree(canvas.h_zbuffer_tree);
+    // }
 
     // COMMENT: Second. Update On Each Frame.
     Controller::OnUpdate(renderer);
@@ -146,11 +177,12 @@ int main(const int argc, char** argv)
   Controller::ShutDown();
   
   // COMMENT: Free All Resources Created.
-  for (int i = 0; i < canvas.width; ++i)
+  for (int i = 0; i < canvas.height; ++i)
   {
     delete[] canvas.zbuffer[i];  
   }
   delete[] canvas.zbuffer;
+  Accelerator::DestroyHZBufferTree(canvas.h_zbuffer_tree);
   SDL_DestroySurface(canvas.surface);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(controller_window);
