@@ -149,16 +149,58 @@ struct Accelerator
   }
 
   // COMMENT: If We Modified Z Buffer At [i, j], We Need Update The Tree. 
-  static void UpdateHZBufferTree(HZBufferNode* tree, const int i, const int j, const float z) NOEXCEPT
+  // static void UpdateHZBufferTree(HZBufferNode* tree, const int i, const int j, const float z) NOEXCEPT
+  // {
+  //   // COMMENT: If The Pixel Is Inside The Tree. Update It.
+  //   if (tree->imin <= i && i <= tree->imax && tree->jmin <= j && j <= tree->jmax)
+  //   {
+  //     tree->zmax = std::max(tree->zmax, z);
+  //     if (tree->ll) UpdateHZBufferTree(tree->ll, i, j, z);
+  //     if (tree->lr) UpdateHZBufferTree(tree->lr, i, j, z);
+  //     if (tree->ul) UpdateHZBufferTree(tree->ul, i, j, z);
+  //     if (tree->ur) UpdateHZBufferTree(tree->ur, i, j, z);
+  //   }
+  // }
+
+  static void UpdateHZBufferTree(const Canvas& canvas, HZBufferNode* tree, const int imin, const int imax, const int jmin, const int jmax) NOEXCEPT
   {
-    // COMMENT: If The Pixel Is Inside The Tree. Update It.
-    if (tree->imin <= i && i <= tree->imax && tree->jmin <= j && j <= tree->jmax)
+    ASSERT(tree != nullptr);
+    if (tree->imin == tree->imax && tree->jmin == tree->jmax)
     {
-      tree->zmax = std::max(tree->zmax, z);
-      if (tree->ll) UpdateHZBufferTree(tree->ll, i, j, z);
-      if (tree->lr) UpdateHZBufferTree(tree->lr, i, j, z);
-      if (tree->ul) UpdateHZBufferTree(tree->ul, i, j, z);
-      if (tree->ur) UpdateHZBufferTree(tree->ur, i, j, z);
+      tree->zmax = canvas.zbuffer[tree->imin][tree->jmin];
+      return;
+    }
+    if (tree->ll != nullptr
+      && ((tree->ll->imin <= imin && imin <= tree->ll->imax) || (tree->ll->imin <= imax && imax <= tree->ll->imax))
+      && ((tree->ll->jmin <= jmin && jmin <= tree->ll->jmax) || (tree->ll->jmin <= jmax && jmax <= tree->ll->jmax))
+    )
+    {
+      UpdateHZBufferTree(canvas, tree->ll, imin, imax, jmin, jmax);
+      tree->zmax = std::max(tree->zmax, tree->ll->zmax);
+    }
+    if (tree->lr != nullptr
+      && ((tree->lr->imin <= imin && imin <= tree->lr->imax) || (tree->lr->imin <= imax && imax <= tree->lr->imax))
+      && ((tree->lr->jmin <= jmin && jmin <= tree->lr->jmax) || (tree->lr->jmin <= jmax && jmax <= tree->lr->jmax))
+    )
+    {
+      UpdateHZBufferTree(canvas, tree->lr, imin, imax, jmin, jmax);
+      tree->zmax = std::max(tree->zmax, tree->lr->zmax);
+    }
+    if (tree->ul != nullptr
+      && ((tree->ul->imin <= imin && imin <= tree->ul->imax) || (tree->ul->imin <= imax && imax <= tree->ul->imax))
+      && ((tree->ul->jmin <= jmin && jmin <= tree->ul->jmax) || (tree->ul->jmin <= jmax && jmax <= tree->ul->jmax))
+    )
+    {
+      UpdateHZBufferTree(canvas, tree->ul, imin, imax, jmin, jmax);
+      tree->zmax = std::max(tree->zmax, tree->ul->zmax);
+    }
+    if (tree->ur != nullptr
+      && ((tree->ur->imin <= imin && imin <= tree->ur->imax) || (tree->ur->imin <= imax && imax <= tree->ur->imax))
+      && ((tree->ur->jmin <= jmin && jmin <= tree->ur->jmax) || (tree->ur->jmin <= jmax && jmax <= tree->ur->jmax))
+    )
+    {
+      UpdateHZBufferTree(canvas, tree->ur, imin, imax, jmin, jmax);
+      tree->zmax = std::max(tree->zmax, tree->ur->zmax);
     }
   }
   

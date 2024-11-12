@@ -154,6 +154,7 @@ struct Setting
   enum Algorithm {
     ScanConvertZBuffer,
     IntervalScanLine,
+    ScanConvertHZBuffer,
   };
   
   bool show_normal    = {};

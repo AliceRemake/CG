@@ -61,7 +61,7 @@ int main(const int argc, char** argv)
   setting.show_wireframe = false;
   setting.enable_cull = true;
   setting.enable_clip = true;
-  setting.algorithm = Setting::ScanConvertZBuffer;
+  setting.algorithm = Setting::ScanConvertHZBuffer;
 
   canvas.offsetx = 0;
   canvas.offsety = 0;
@@ -77,7 +77,7 @@ int main(const int argc, char** argv)
     canvas.zbuffer[i] = new float[canvas.width];
   }
   canvas.z = 1E9;
-  // canvas.h_zbuffer_tree = Accelerator::BuildHZBufferTree(canvas, 0, canvas.height-1, 0, canvas.width-1);
+  canvas.h_zbuffer_tree = Accelerator::BuildHZBufferTree(canvas, 0, canvas.height-1, 0, canvas.width-1);
   
   camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
   camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -149,7 +149,7 @@ int main(const int argc, char** argv)
 
     // COMMENT: First. Clear Data From Last Frame.
     SDL_ClearSurface(canvas.surface, canvas.color.r, canvas.color.g, canvas.color.b, 1.0f);
-    if (setting.algorithm == Setting::ScanConvertZBuffer)
+    if (setting.algorithm == Setting::ScanConvertZBuffer || setting.algorithm == Setting::ScanConvertHZBuffer)
     {
       for (int i = 0; i < canvas.height; ++i)
       {
@@ -158,6 +158,10 @@ int main(const int argc, char** argv)
           canvas.zbuffer[i][j] = canvas.z;
         }
       }
+    }
+    if (setting.algorithm == Setting::ScanConvertHZBuffer)
+    {
+      Accelerator::ReSetHZBufferTree(canvas.h_zbuffer_tree);  
     }
 
     // COMMENT: Second. Update On Each Frame.

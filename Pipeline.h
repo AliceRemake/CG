@@ -203,6 +203,10 @@ struct Pipeline
     {
       Rasterizer::RenderPolygonsIntervalScanLine(canvas, vertices, polygons);
     }
+    else if (setting.algorithm == Setting::ScanConvertHZBuffer)
+    {
+      Rasterizer::RenderPolygonsScanConvertHZBuffer(canvas, vertices, polygons);
+    }
     
     Rasterizer::RenderLines(canvas, vertices, lines);
   

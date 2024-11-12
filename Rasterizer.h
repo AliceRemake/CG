@@ -192,7 +192,7 @@ public: // COMMENT: Public Functions For Other Systems To Use.
     }
   }
 
-    static void RenderPolygonsScanConvertZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
+  static void RenderPolygonsScanConvertZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
   {
     static std::vector<float> A; A.clear();
     static std::vector<float> B; B.clear();
@@ -532,6 +532,174 @@ public: // COMMENT: Public Functions For Other Systems To Use.
       }
     }
   }
+
+  static void RenderPolygonsScanConvertHZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
+  {
+    static std::vector<float> A; A.clear();
+    static std::vector<float> B; B.clear();
+    static std::vector<float> C; C.clear();
+    
+     A.resize(polygons.size());
+     B.resize(polygons.size());
+     C.resize(polygons.size());
+    
+    for (size_t i = 0; i < polygons.size(); ++i)
+    {
+      glm::vec3 p0 = vertices[polygons[i].vertices[0]]; 
+      glm::vec3 p1 = vertices[polygons[i].vertices[1]]; 
+      glm::vec3 p2 = vertices[polygons[i].vertices[2]]; 
+      glm::vec3 n = glm::normalize(glm::cross(p0 - p1, p1 - p2));
+      A[i] = -n.x / n.z;
+      B[i] = -n.y / n.z;
+      C[i] = glm::dot(n, p0) / n.z;
+    }
+
+    static auto TestZ = [&](const uint32_t pid, const int i, const int j) NOEXCEPT
+    {
+      if (pid == polygons.size()) return canvas.z;
+      return A[pid] * j + B[pid] * i + C[pid];
+    };
+    
+    static std::vector<Edge> ET; ET.clear();
+    ET.reserve(std::accumulate(polygons.begin(), polygons.end(), 0, [](const size_t acc, const struct Polygon& polygon) { return std::max(acc, polygon.vertices.size()); }));
+
+    for (size_t pid = 0; pid < polygons.size(); ++pid)
+    {
+      AABB aabb = AABB::From(vertices, polygons[pid]);
+        
+      if (Accelerator::QueryHZBufferTree(canvas.h_zbuffer_tree, std::round(aabb.vmin.y), std::round(aabb.vmax.y), std::round(aabb.vmin.x), std::round(aabb.vmax.x)) <= aabb.vmin.z)
+      {
+        continue;
+      }
+      
+      ET.clear();
+      
+      glm::ivec2 vmin = glm::ivec2(canvas.height-1, canvas.width-1);      
+      glm::ivec2 vmax = glm::ivec2(0, 0); 
+
+      for (size_t j = 0; j < polygons[pid].vertices.size(); ++j)
+      {
+        vmin = glm::min(vmin, glm::ivec2(glm::round(vertices[polygons[pid].vertices[j]])));
+        vmax = glm::max(vmax, glm::ivec2(glm::round(vertices[polygons[pid].vertices[j]])));
+        
+        size_t k = (j + 1) % polygons[pid].vertices.size();
+
+        glm::vec3 v0 = vertices[polygons[pid].vertices[j]];
+        glm::vec3 v1 = vertices[polygons[pid].vertices[k]];
+
+        if (std::round(v0.y) == std::round(v1.y))
+        {
+          continue;
+        }
+        
+        if (v0.y > v1.y)
+        {
+          std::swap(v0, v1);
+        }
+
+        float dxdy = (std::round(v0.x) - std::round(v1.x)) / (std::round(v0.y) - std::round(v1.y));
+        
+        Edge edge {
+          .ymin = (int)std::round(v0.y),
+          .ymax = (int)std::round(v1.y),
+          .x = (int)std::round(v0.x),
+          .d = dxdy > 0.0f ? 1 : -1,
+          .m = std::abs(dxdy),
+          .e = std::abs(dxdy) - 0.5f,
+          .pid = pid,
+        };
+
+        if (edge.ymax >= 0 && edge.ymin < canvas.height)
+        {
+          if (edge.ymin < 0)
+          {
+            edge.e += edge.m * (0 - edge.ymin);
+            while(edge.e > 0.0f)
+            {
+              edge.x += edge.d;
+              edge.e -= 1.0f;
+            }
+            edge.ymin = 0;
+          }
+
+          if(edge.ymax >= canvas.height)
+          {
+            edge.ymax = canvas.height-1;
+          }
+
+          ET.emplace_back(edge);
+        }
+      }
+
+      vmin = glm::max(vmin, glm::ivec2(0, 0));
+      vmax = glm::min(vmax, glm::ivec2(canvas.width-1, canvas.height-1));
+      
+      std::sort(ET.begin(), ET.end());
+
+      std::list<Edge*> AET;
+      
+      for (int i = vmin.y, k = 0; i <= vmax.y; ++i)
+      {
+        while((size_t)k < ET.size() && ET[k].ymin < i)
+        {
+          ++k;
+        }
+        while ((size_t)k < ET.size() && ET[k].ymin == i)
+        {
+          AET.push_back(&ET[k]);
+          k++;
+        }
+
+        for (auto it = AET.begin(); it != AET.end();)
+        {
+          if ((*it)->ymin == (*it)->ymax)
+          {
+            it = AET.erase(it);
+          }
+          else
+          {
+            ++it;
+          }
+        }
+
+        AET.sort([](const Edge* lhs, const Edge* rhs) NOEXCEPT { return *lhs < *rhs; });
+
+        for (auto it = AET.begin(); it != std::prev(AET.end()); ++it)
+        {
+          auto nxt = std::next(it);
+
+          if ((*it)->x == (*nxt)->x)
+          {
+            continue;
+          }
+
+          for (int j = std::max(vmin.x, (*it)->x); j <= std::min(vmax.x, (*nxt)->x); ++j)
+          {
+            float curz = TestZ(pid, i, j);
+            if (canvas.zbuffer[i][j] > curz)
+            {
+              canvas.zbuffer[i][j] = curz;
+              RenderPixel(canvas, i, j, polygons[pid].color);
+            }
+          }
+        }
+      
+        for (auto& edge : AET)
+        {
+          edge->ymin += 1;
+          edge->e += edge->m;
+          while(edge->e > 0.0f)
+          {
+            edge->x += edge->d;
+            edge->e -= 1.0f;
+          }
+        }
+      }
+
+      Accelerator::UpdateHZBufferTree(canvas, canvas.h_zbuffer_tree, vmin.y, vmax.y, vmin.x, vmax.x);
+    }
+  }
+
   
 };
 
