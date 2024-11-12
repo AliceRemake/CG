@@ -43,22 +43,22 @@ struct Debugger
     #endif
   }
 
-  static void Dump(const Triangle& triangle) NOEXCEPT
-  {
-    #ifdef NDEBUG
-    (void)triangle;
-    #else
-    fmt::printf("Triangle:\n");
-    (void)triangle;
-    // fmt::printf("  Vertex 0: "); Dump(triangle.vertices[0]);
-    // fmt::printf("  Vertex 1: "); Dump(triangle.vertices[1]);
-    // fmt::printf("  Vertex 2: "); Dump(triangle.vertices[2]);
-    // fmt::printf("  Color  0: "); Dump(triangle.colors[0]);
-    // fmt::printf("  Color  1: "); Dump(triangle.colors[1]);
-    // fmt::printf("  Color  2: "); Dump(triangle.colors[2]);
-    fflush(stdout);
-    #endif
-  }
+  // static void Dump(const Triangle& triangle) NOEXCEPT
+  // {
+  //   #ifdef NDEBUG
+  //   (void)triangle;
+  //   #else
+  //   fmt::printf("Triangle:\n");
+  //   (void)triangle;
+  //   // fmt::printf("  Vertex 0: "); Dump(triangle.vertices[0]);
+  //   // fmt::printf("  Vertex 1: "); Dump(triangle.vertices[1]);
+  //   // fmt::printf("  Vertex 2: "); Dump(triangle.vertices[2]);
+  //   // fmt::printf("  Color  0: "); Dump(triangle.colors[0]);
+  //   // fmt::printf("  Color  1: "); Dump(triangle.colors[1]);
+  //   // fmt::printf("  Color  2: "); Dump(triangle.colors[2]);
+  //   fflush(stdout);
+  //   #endif
+  // }
 
   static void Dump(const AABB& aabb) NOEXCEPT
   {

@@ -28,12 +28,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstdint>
-#include <iostream>
-#include <vector>
-#include <list>
-#include <string>
-#include <filesystem>
 #include <bitset>
+#include <list>
+#include <array>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <filesystem>
 
 #undef near
 #undef far
@@ -41,12 +42,6 @@
 #define NODISCARD [[nodiscard]]
 #define NOEXCEPT noexcept
 #define CONSTEXPR constexpr
-
-#ifdef NDEBUG
-#define FORCE_INLINE __attribute__((always_inlnie))
-#else
-#define FORCE_INLINE
-#endif
 
 #define __STR(s) #s
 #define STR(s) __STR(s)
@@ -96,5 +91,14 @@
 #else
   #define ASSERT(exp) do { if(!(exp)) DEBUGBREAK(); } while (0)
 #endif
+
+template<typename T>
+using Array1 = std::array<T, 1>;
+
+template<typename T>
+using Array2 = std::array<T, 2>;
+
+template<typename T>
+using Array3 = std::array<T, 3>;
 
 #endif //COMMON_H

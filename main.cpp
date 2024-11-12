@@ -6,6 +6,7 @@
 #include <Actor.h>
 #include <Controller.h>
 #include <Loader.h>
+#include <Debugger.h>
 
 // COMMENT: Size Of The Renderer.
 CONSTEXPR int RENDERER_WIDTH = 1280;
@@ -89,6 +90,11 @@ int main(const int argc, char** argv)
   camera.aspect = 4.0f / 3.0f;
   camera.near = 0.1f;
   camera.far = 10.0f;
+
+  // AABB aabb = { glm::vec3{0, 0, 0}, glm::vec3{1, 1, 1} };
+  // Transformer::TransformAABB(aabb, Transformer::RotateZ(glm::radians(30.0f)));
+  // Debugger::Dump(aabb.vmin);
+  // Debugger::Dump(aabb.vmax);
   
   // COMMENT: Set Up Basic Scene.
   Model m;

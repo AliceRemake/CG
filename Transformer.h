@@ -17,6 +17,7 @@
 #include <Entity.h>
 
 // COMMENT: Transformer System. For Generating Transform Matrices.
+// NOTE: glm stores column vectors
 struct Transformer
 {
 
@@ -62,7 +63,6 @@ struct Transformer
 
   static glm::mat4 Viewport(const Canvas& canvas) NOEXCEPT
   {
-    // NOTE: glm stores column vectors
     const int& w = canvas.width;
     const int& h = canvas.height;
     return glm::mat4 {
@@ -72,7 +72,25 @@ struct Transformer
       glm::vec4{ w/2.0f-0.5f, h/2.0f-0.5f, 0.0f, 1.0f },
     };
   }
+  
+  // Ref: Arvo, James. “Transforming axis-aligned bounding boxes.” Graphics gems (1990): 548-550.
+  static void TransformAABB(AABB& aabb, const glm::mat4& matrix) NOEXCEPT
+  {
+    glm::vec3 vmin = aabb.vmin;
+    glm::vec3 vmax = aabb.vmax;
 
+    aabb.vmin = matrix[3].xyz();
+    aabb.vmax = matrix[3].xyz();
+
+    for (int j = 0; j < 3; ++j)
+    {
+      glm::vec3 a = matrix[j].xyz() * vmin;
+      glm::vec3 b = matrix[j].xyz() * vmax;
+      aabb.vmin += glm::min(a, b);
+      aabb.vmax += glm::max(a, b);
+    }
+  }
+  
 };
 
 #endif //TRANSFORMER_H

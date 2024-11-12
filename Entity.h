@@ -28,24 +28,27 @@ struct Line
   Color color = {};
 };
 
-// struct Triangle
-// {
-//   uint32_t vertices[3] = {};
-//   Color color = {};
-// };
-
 struct Polygon
 {
   std::vector<uint32_t> vertices = {};
   Color color = {};
 };
 
-// COMMENT: Axis-Aligned-Bounding-Box.
 struct AABB
 {
   Vertex vmin;
   Vertex vmax;
 
+  static Vertex Center(const AABB& aabb) NOEXCEPT
+  {
+    return (aabb.vmin + aabb.vmax) / 2.0f; 
+  }
+
+  static Vector Radius(const AABB& aabb) NOEXCEPT
+  {
+    return (aabb.vmax - aabb.vmin) / 2.0f;
+  }
+  
   static AABB From(const std::vector<Vertex>& vertices, const Line& line) NOEXCEPT
   {
     return AABB {
@@ -53,14 +56,6 @@ struct AABB
       .vmax = glm::max(vertices[line.vertices[0]], vertices[line.vertices[1]]),
     };
   }
-
-  // static AABB From(const std::vector<Vertex>& vertices, const Triangle& triangle) NOEXCEPT
-  // {
-  //   return AABB {
-  //     .vmin = glm::min(glm::min(vertices[triangle.vertices[0]], vertices[triangle.vertices[1]]), vertices[triangle.vertices[2]]),
-  //     .vmax = glm::max(glm::max(vertices[triangle.vertices[0]], vertices[triangle.vertices[1]]), vertices[triangle.vertices[2]]),
-  //   };
-  // }
 
   static AABB From(const std::vector<Vertex>& vertices, const struct Polygon& polygon) NOEXCEPT
   {
@@ -74,6 +69,8 @@ struct AABB
   }
 
 };
+
+
 
 // COMMENT: 3D Model.
 struct Model
