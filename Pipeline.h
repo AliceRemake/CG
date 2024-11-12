@@ -59,6 +59,7 @@ struct Pipeline
     // const glm::mat4 normal_matrix = glm::transpose(glm::inverse(vertex_matrix));
 
     // COMMENT: Transform Lights From World Space To Camera Space.
+    // TODO: Parallel.
     for (size_t i = 0; i < lights.size(); ++i) {
       glm::vec4 position = view * glm::vec4(scene.lights[i].position, 1.0f);
       lights[i].position = position.xyz() / position.w;
@@ -66,6 +67,7 @@ struct Pipeline
     }
 
     // COMMENT: Transform Vertices From Model Space To Camera Space.
+    // TODO: Parallel.
     for (size_t i = 0; i < vertices.size(); ++i) {
       glm::vec4 vertex = vertex_matrix * glm::vec4(model.vertices[i], 1.0f);
       vertices[i] = vertex.xyz() / vertex.w;
@@ -122,6 +124,7 @@ struct Pipeline
     // COMMENT: Pre Calculate Transform Matrices.
     glm::mat4 project = Transformer::Project(camera);
 
+    // TODO: Parallel.
     for (auto& vertex : vertices)
     {
       glm::vec4 t = project * glm::vec4(vertex, 1.0f);
@@ -185,28 +188,28 @@ struct Pipeline
     // COMMENT: Pre Calculate Transform Matrices.
     glm::mat4 viewport = Transformer::Viewport(canvas);
 
+    // TODO: Parallel.
     for (auto& vertex : vertices)
     {
       glm::vec4 t = viewport * glm::vec4(vertex, 1.0f);
       vertex = t.xyz() / t.w;
     }
 
-    Rasterizer::RenderPolygonsScanLine(canvas, vertices, polygons);
-    
-    for (auto& line : lines)
+    if (setting.algorithm == Setting::ScanConvertZBuffer)
     {
-      Rasterizer::RenderLine(canvas, vertices, line);
+      Rasterizer::RenderPolygonsScanConvertZBuffer(canvas, vertices, polygons);
     }
-
-    for (auto& polygon : polygons)
+    else if (setting.algorithm == Setting::IntervalScanLine)
     {
-      if (setting.show_wireframe)
-      {
-        Rasterizer::RenderPolygonWireframe(canvas, vertices, polygon);
-      }
+      Rasterizer::RenderPolygonsIntervalScanLine(canvas, vertices, polygons);
     }
     
-
+    Rasterizer::RenderLines(canvas, vertices, lines);
+  
+    if (setting.show_wireframe)
+    {
+      Rasterizer::RenderPolygonsWireframe(canvas, vertices, polygons);
+    }
   }
   
 };

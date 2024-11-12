@@ -21,7 +21,7 @@
 
 struct Rasterizer
 {
-private: // COMMENT: Internal Util Functions For Rasterization.
+public: // COMMENT: Internal Util Functions For Rasterization.
 
   // COMMENT: Map A Color To The Format That Canvas Accepts.
   static uint32_t MapColor(const Canvas&canvas, const Color& color) NOEXCEPT
@@ -42,12 +42,6 @@ private: // COMMENT: Internal Util Functions For Rasterization.
   // COMMENT: Render A Segment Of Pixels In [(i, jmin), (i, jmax)], With The Specific Color.
   static void RenderSegment(const Canvas& canvas, const int i, int jmin, int jmax, const Color& color) NOEXCEPT
   {
-    // COMMENT: Ignore Out Of Range
-    if (i < 0 || i >= canvas.height) return;
-    if (jmin > jmax || jmax < 0 || jmin >= canvas.width) return;
-    jmin = std::clamp(jmin, 0, canvas.width-1);
-    jmax = std::clamp(jmax, 0, canvas.width-1);
-    // NOTE: Close Interval To Avoid Gaps In Rendering
     for (int j = jmin; j <= jmax; ++j)
     {
       RenderPixel(canvas, i, j, color);
@@ -89,6 +83,7 @@ private: // COMMENT: Internal Util Functions For Rasterization.
   {
     const int dx = p1.x - p0.x;
     const int dy = p1.y - p0.y;
+
     int x = p0.x;
     int y = p0.y;
     
@@ -106,7 +101,7 @@ private: // COMMENT: Internal Util Functions For Rasterization.
     if (std::abs(dx) > std::abs(dy))
     {
       const float m = std::abs((float)dy / (float)dx);
-      float e = m - 0.5f; // COMMENT: Error.
+      float e = m - 0.5f;
       for (int i = 0; i <= std::abs(dx); ++i)
       {
         RenderPixel(canvas, y, x, color);
@@ -122,7 +117,7 @@ private: // COMMENT: Internal Util Functions For Rasterization.
     else
     {
       const float m = std::abs((float)dx / (float)dy);
-      float e = m - 0.5f; // COMMENT: Error.
+      float e = m - 0.5f;
       for (int i = 0; i <= std::abs(dy); ++i)
       {
         RenderPixel(canvas, y, x, color);
@@ -143,37 +138,69 @@ private: // COMMENT: Internal Util Functions For Rasterization.
     float k = (float)std::abs(p.x - p0.x) / (float)std::abs(p1.x - p0.x);
     return (1 - k) * t0 + k * t1;
   }
+
+  struct Edge
+  {
+    int ymin;
+    int ymax;
+    int x;
+    int d;
+    float m;
+    float e;
+    size_t pid;
+
+    bool operator<(const Edge& oth) const NOEXCEPT
+    {
+      if (ymin != oth.ymin)
+      {
+        return ymin < oth.ymin;  
+      }
+      if (x != oth.x)
+      {
+        return x < oth.x;  
+      }
+      return d * m < oth.d * oth.m;
+    }
+
+    bool operator==(const Edge& oth) const NOEXCEPT
+    {
+      return ymin == oth.ymin && x == oth.x && d * m == oth.d * oth.m;
+    }
+  };
   
+
+
 public: // COMMENT: Public Functions For Other Systems To Use.
 
-  static void RenderLine(const Canvas& canvas, const std::vector<Vertex>& vertices, const Line& line) NOEXCEPT
+  static void RenderLines(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Line>& lines) NOEXCEPT
   {
-    RenderLineBresenham(canvas, glm::round(vertices[line.vertices[0]]).xy(), glm::round(vertices[line.vertices[1]]).xy(), line.color);
-  }
-
-  static void RenderPolygonWireframe(const Canvas& canvas, const std::vector<Vertex>& vertices, const struct Polygon& polygon) NOEXCEPT
-  {
-    for (size_t i = 0; i < polygon.vertices.size(); ++i)
+    for (const auto& line : lines)
     {
-      RenderLine(canvas, vertices, Line{
-        .vertices = { polygon.vertices[i], polygon.vertices[(i+1)%polygon.vertices.size()] },
-        .color = polygon.color,
-      });
+      RenderLineBresenham(canvas, glm::ivec2(glm::round(vertices[line.vertices[0]])), glm::ivec2(glm::round(vertices[line.vertices[1]])), line.color);
     }
   }
 
-  // COMMENT: Input Canvas Vertices And All Polygons. Do The Rendering. This Algorithm Do Not Use ZBuffer. 
-  static void RenderPolygonsScanLine(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
+  static void RenderPolygonsWireframe(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
   {
-    if (polygons.empty()) return;
+    for (const auto& polygon : polygons)
+    {
+      for (size_t i = 0; i < polygon.vertices.size(); ++i)
+      {
+        size_t j = (i + 1) % polygon.vertices.size();
+        RenderLineBresenham(canvas, glm::ivec2(glm::round(vertices[polygon.vertices[i]])), glm::ivec2(glm::round(vertices[polygon.vertices[j]])), polygon.color);
+      }
+    }
+  }
+
+    static void RenderPolygonsScanConvertZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
+  {
+    static std::vector<float> A; A.clear();
+    static std::vector<float> B; B.clear();
+    static std::vector<float> C; C.clear();
     
-    // COMMENT: Calculate Polygon Equation.
-    std::vector<float> A;
-    std::vector<float> B;
-    std::vector<float> C;
-    A.clear(); A.reserve(polygons.size());
-    B.clear(); B.reserve(polygons.size());
-    C.clear(); C.reserve(polygons.size());
+     A.resize(polygons.size());
+     B.resize(polygons.size());
+     C.resize(polygons.size());
     
     for (size_t i = 0; i < polygons.size(); ++i)
     {
@@ -186,57 +213,41 @@ public: // COMMENT: Public Functions For Other Systems To Use.
       C[i] = glm::dot(n, p0) / n.z;
     }
 
-    // COMMENT: Util Function For Calculating Z.
-    auto CalcZ =  [&](const uint32_t pid, const int i, const int j) -> float
+    static auto TestZ = [&](const uint32_t pid, const int i, const int j) NOEXCEPT
     {
-      ASSERT(pid <= polygons.size());
-      if (pid == polygons.size())
-      {
-        return 1E9;  
-      }
+      if (pid == polygons.size()) return canvas.z;
       return A[pid] * j + B[pid] * i + C[pid];
     };
     
-    // COMMENT: Edge Data Structure In Scan Convert. 
-    struct Edge
-    {
-      int ymin;
-      int ymax;
-      int x;
-      int delta;
-      float m;
-      float e;
-      size_t pid;
-    };
+    static std::vector<Edge> ET; ET.clear();
+    ET.reserve(std::accumulate(polygons.begin(), polygons.end(), 0, [](const size_t acc, const struct Polygon& polygon) { return std::max(acc, polygon.vertices.size()); }));
 
-    // COMMENT: Edge Table.
-    std::vector<Edge> ET;
-    ET.clear();
-    ET.reserve(2 + std::accumulate(polygons.begin(), polygons.end(), 0, [](const size_t& acc, const struct Polygon& polygon) -> size_t {
-      return acc + polygon.vertices.size();
-    }));
-    ET.emplace_back(0, canvas.height-1,              0, 0, 0.0f, -0.5f, polygons.size());
-    ET.emplace_back(0, canvas.height-1, canvas.width-1, 0, 0.0f, -0.5f, polygons.size());
-
-    // COMMENT: Create All Edges. Store In ET.
-    for (size_t i = 0; i < polygons.size(); ++i)
+    for (size_t pid = 0; pid < polygons.size(); ++pid)
     {
-      for (size_t j = 0; j < polygons[i].vertices.size(); ++j)
+      ET.clear();
+      
+      glm::ivec2 vmin = glm::ivec2(canvas.height-1, canvas.width-1);      
+      glm::ivec2 vmax = glm::ivec2(0, 0); 
+
+      for (size_t j = 0; j < polygons[pid].vertices.size(); ++j)
       {
-        size_t k = (j + 1) % polygons[i].vertices.size();
+        vmin = glm::min(vmin, glm::ivec2(glm::round(vertices[polygons[pid].vertices[j]])));
+        vmax = glm::max(vmax, glm::ivec2(glm::round(vertices[polygons[pid].vertices[j]])));
+        
+        size_t k = (j + 1) % polygons[pid].vertices.size();
 
-        // COMMENT: v0 Is Lower Point. v1 Is Upper Point.
-        glm::vec3 v0 = vertices[polygons[i].vertices[j]];
-        glm::vec3 v1 = vertices[polygons[i].vertices[k]];
-        if (v0.y > v1.y) std::swap(v0, v1);
+        glm::vec3 v0 = vertices[polygons[pid].vertices[j]];
+        glm::vec3 v1 = vertices[polygons[pid].vertices[k]];
 
-        // COMMENT: Ignore Horizontal Edge.
         if (std::round(v0.y) == std::round(v1.y))
         {
           continue;
         }
-
-        ASSERT(std::round(v0.y) < std::round(v1.y));
+        
+        if (v0.y > v1.y)
+        {
+          std::swap(v0, v1);
+        }
 
         float dxdy = (std::round(v0.x) - std::round(v1.x)) / (std::round(v0.y) - std::round(v1.y));
         
@@ -244,165 +255,279 @@ public: // COMMENT: Public Functions For Other Systems To Use.
           .ymin = (int)std::round(v0.y),
           .ymax = (int)std::round(v1.y),
           .x = (int)std::round(v0.x),
-          .delta = dxdy > 0.0f ? 1 : -1,
+          .d = dxdy > 0.0f ? 1 : -1,
           .m = std::abs(dxdy),
           .e = std::abs(dxdy) - 0.5f,
-          .pid = i,
+          .pid = pid,
         };
 
         if (edge.ymax >= 0 && edge.ymin < canvas.height)
         {
-          // COMMENT: Clip.
           if (edge.ymin < 0)
           {
             edge.e += edge.m * (0 - edge.ymin);
             while(edge.e > 0.0f)
             {
-              edge.x += edge.delta;
+              edge.x += edge.d;
               edge.e -= 1.0f;
             }
             edge.ymin = 0;
           }
+
           if(edge.ymax >= canvas.height)
           {
             edge.ymax = canvas.height-1;
           }
+
+          ET.emplace_back(edge);
+        }
+      }
+
+      vmin = glm::max(vmin, glm::ivec2(0, 0));
+      vmax = glm::min(vmax, glm::ivec2(canvas.width-1, canvas.height-1));
+
+      std::sort(ET.begin(), ET.end());
+
+      std::list<Edge*> AET;
+      
+      for (int i = vmin.y, k = 0; i <= vmax.y; ++i)
+      {
+        while((size_t)k < ET.size() && ET[k].ymin < i)
+        {
+          ++k;
+        }
+        while ((size_t)k < ET.size() && ET[k].ymin == i)
+        {
+          AET.push_back(&ET[k]);
+          k++;
+        }
+
+        for (auto it = AET.begin(); it != AET.end();)
+        {
+          if ((*it)->ymin == (*it)->ymax)
+          {
+            it = AET.erase(it);
+          }
+          else
+          {
+            ++it;
+          }
+        }
+
+        AET.sort([](const Edge* lhs, const Edge* rhs) NOEXCEPT { return *lhs < *rhs; });
+
+        for (auto it = AET.begin(); it != std::prev(AET.end()); ++it)
+        {
+          auto nxt = std::next(it);
+
+          if ((*it)->x == (*nxt)->x)
+          {
+            continue;
+          }
+
+          for (int j = std::max(vmin.x, (*it)->x); j <= std::min(vmax.x, (*nxt)->x); ++j)
+          {
+            float curz = TestZ(pid, i, j);
+            if (canvas.zbuffer[i][j] > curz)
+            {
+              canvas.zbuffer[i][j] = curz;
+              RenderPixel(canvas, i, j, polygons[pid].color);
+            }
+          }
+        }
+      
+        for (auto& edge : AET)
+        {
+          edge->ymin += 1;
+          edge->e += edge->m;
+          while(edge->e > 0.0f)
+          {
+            edge->x += edge->d;
+            edge->e -= 1.0f;
+          }
+        }
+      }
+    }
+  }
+
+  // COMMENT: Input Canvas Vertices And All Polygons. Do The Rendering. This Algorithm Do Not Use ZBuffer. 
+  static void RenderPolygonsIntervalScanLine(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<struct Polygon>& polygons) NOEXCEPT
+  {
+    static std::vector<float> A; A.clear();
+    static std::vector<float> B; B.clear();
+    static std::vector<float> C; C.clear();
+    
+     A.resize(polygons.size());
+     B.resize(polygons.size());
+     C.resize(polygons.size());
+    
+    for (size_t i = 0; i < polygons.size(); ++i)
+    {
+      glm::vec3 p0 = vertices[polygons[i].vertices[0]]; 
+      glm::vec3 p1 = vertices[polygons[i].vertices[1]]; 
+      glm::vec3 p2 = vertices[polygons[i].vertices[2]]; 
+      glm::vec3 n = glm::normalize(glm::cross(p0 - p1, p1 - p2));
+      A[i] = -n.x / n.z;
+      B[i] = -n.y / n.z;
+      C[i] = glm::dot(n, p0) / n.z;
+    }
+
+    static auto TestZ = [&](const uint32_t pid, const int i, const int j) NOEXCEPT
+    {
+      if (pid == polygons.size()) return canvas.z;
+      return A[pid] * j + B[pid] * i + C[pid];
+    };
+
+    glm::ivec2 vmin = glm::ivec2(canvas.height-1, canvas.width-1);      
+    glm::ivec2 vmax = glm::ivec2(0, 0);
+    
+    for (const auto& vertex : vertices)
+    {
+      vmin = glm::min(vmin, glm::ivec2(glm::round(vertex)));
+      vmax = glm::max(vmax, glm::ivec2(glm::round(vertex)));
+    }
+
+    vmin = glm::max(vmin, glm::ivec2(0, 0));
+    vmax = glm::min(vmax, glm::ivec2(canvas.width-1, canvas.height-1));
+    
+    static std::vector<Edge> ET; ET.clear();
+    ET.reserve(2 + std::accumulate(polygons.begin(), polygons.end(), 0, [](const size_t acc, const struct Polygon& polygon) { return acc + polygon.vertices.size(); }));
+
+    ET.emplace_back(vmin.y, vmax.y, vmin.x, 0, 0.0f, -0.5f, polygons.size());
+    ET.emplace_back(vmin.y, vmax.y, vmax.x, 0, 0.0f, -0.5f, polygons.size());
+    
+    for (size_t i = 0; i < polygons.size(); ++i)
+    {
+      for (size_t j = 0; j < polygons[i].vertices.size(); ++j)
+      {
+        size_t k = (j + 1) % polygons[i].vertices.size();
+
+        glm::vec3 v0 = vertices[polygons[i].vertices[j]];
+        glm::vec3 v1 = vertices[polygons[i].vertices[k]];
+
+        if (std::round(v0.y) == std::round(v1.y))
+        {
+          continue;
+        }
+        
+        if (v0.y > v1.y)
+        {
+          std::swap(v0, v1);
+        }
+
+        float dxdy = (std::round(v0.x) - std::round(v1.x)) / (std::round(v0.y) - std::round(v1.y));
+        
+        Edge edge {
+          .ymin = (int)std::round(v0.y),
+          .ymax = (int)std::round(v1.y),
+          .x = (int)std::round(v0.x),
+          .d = dxdy > 0.0f ? 1 : -1,
+          .m = std::abs(dxdy),
+          .e = std::abs(dxdy) - 0.5f,
+          .pid = i,
+        };
+
+        if (edge.ymax >= vmin.y && edge.ymin <= vmax.y)
+        {
+          if (edge.ymin < vmin.y)
+          {
+            edge.e += edge.m * (vmin.y - edge.ymin);
+            while(edge.e > 0.0f)
+            {
+              edge.x += edge.d;
+              edge.e -= 1.0f;
+            }
+            edge.ymin = vmin.y;
+          }
+
+          if(edge.ymax > vmax.y)
+          {
+            edge.ymax = vmax.y;
+          }
+
           ET.emplace_back(edge);
         }
       }
     }
 
-    // COMMENT: Sort Edge Table. ymin Inc. x Inc. dxdy Inc.
-    std::ranges::sort(ET, [](const Edge& lhs, const Edge& rhs) -> bool {
-      if (lhs.ymin != rhs.ymin)
-      {
-        return lhs.ymin < rhs.ymin;  
-      }
-      if (lhs.x != rhs.x)
-      {
-        return lhs.x < rhs.x;  
-      }
-      return lhs.delta * lhs.m < rhs.delta * rhs.m;
-    });
+    std::sort(ET.begin(), ET.end());
 
-    // COMMENT: Sorted Edge Table.
-    std::vector<std::list<Edge>> SET;
-    SET.resize(canvas.height);
-    for (auto & edge : ET)
+    static std::list<Edge*> AET; AET.clear();
+    static std::unordered_set<uint32_t> APT; APT.clear();
+
+    for (int i = vmin.y, j = 0; i < vmax.y; ++i)
     {
-      SET[edge.ymin].emplace_back(edge);
-    }
-
-    
-    std::list<Edge> AET;
-    
-    // COMMENT: Scan.
-    for (int i = 0; i < canvas.height; ++i)
-    {
-      if (!SET[i].empty())
+      while((size_t)j < ET.size() && ET[j].ymin < i)
       {
-        auto it = AET.begin();
-        for (const auto& edge : SET[i])
-        {
-          while(it != AET.end() && it->x < edge.x)
-            ++it;
-          while(it != AET.end() && it->x == edge.x && it->delta * it->m <= edge.delta * edge.m)
-            ++it;
-          AET.emplace(it, edge);
-        }
+        ++j;
       }
-
-      if (AET.empty()) break;
+      while ((size_t)j < ET.size() && ET[j].ymin == i)
+      {
+        AET.push_back(&ET[j]);
+        j++;
+      }
 
       for (auto it = AET.begin(); it != AET.end();)
       {
-        if (i >= it->ymax) it = AET.erase(it);
-        else ++it;
-      }
-
-      AET.sort([](const Edge& lhs, const Edge& rhs) {
-        if (lhs.ymin != rhs.ymin)
+        if ((*it)->ymin == (*it)->ymax)
         {
-          return lhs.ymin < rhs.ymin;  
-        }
-        if (lhs.x != rhs.x)
-        {
-          return lhs.x < rhs.x;  
-        }
-        return lhs.delta * lhs.m < rhs.delta * rhs.m;
-      });
-
-      std::unordered_set<uint32_t> APT;
-
-      // for (const auto& edge : AET) {
-      //   RenderPixel(canvas, edge.ymin, edge.x, {1.0f, 0.0f, 0.0f});
-      //   RenderPixel(canvas, edge.ymax, edge.x + edge.dxdy * (edge.ymax - edge.ymin), {1.0f, 0.0f, 0.0f});
-      //   SDL_UpdateWindowSurface(canvas.window);
-      // }
-      // for (auto it = AET.begin(); it != std::prev(AET.end()); ++it) {
-      //   ASSERT(it->x <= std::next(it)->x);
-      //   if (it->x == std::next(it)->x)
-      //   {
-      //     ASSERT(it->dxdy <= std::next(it)->dxdy);
-      //   }
-      // }
-      
-      for (auto it = AET.begin(); it != std::prev(AET.end());)
-      {
-        auto cit = it++;
-        if (auto xit = APT.find(cit->pid); xit != APT.end())
-        {
-          APT.erase(xit);
+          it = AET.erase(it);
         }
         else
         {
-          APT.insert(cit->pid);  
+          ++it;
         }
-        if (cit->x == it->x) continue;
+      }
 
-        ASSERT(cit->x < it->x);
-        // flag[cit->pid] = !flag[cit->pid];
-        // if (flag[cit->pid])
-        // {
-        //   // COMMENT: Insert Into APT.
-        //   APT.emplace_back(cit->pid);
-        // }
-        // else
-        // {
-        //   // COMMENT: Erase From APT.
-        //   APT.remove(cit->pid);
-        // }
-        // COMMENT: 计算活化多边形在点[i, (std::round(cit->x), std::round(it->x)) / 2]的z值
+      // TODO: Very Slow.
+      AET.sort([](const Edge* lhs, const Edge* rhs) NOEXCEPT { return *lhs < *rhs; });
+      APT.clear();
+
+      for (auto it = AET.begin(); it != std::prev(AET.end()); ++it)
+      {
+        if (auto found = APT.find((*it)->pid); found != APT.end())
+        {
+          APT.erase(found);
+        }
+        else
+        {
+          APT.insert((*it)->pid);
+        }
+
+        auto nxt = std::next(it);
+
+        if ((*it)->x == (*nxt)->x)
+        {
+          continue;
+        }
+
         size_t target = polygons.size();
-        float z = 1E9;
+        float z = canvas.z;
+        
         for (const auto pid : APT)
         {
-          float zz = CalcZ(pid, i, std::round((cit->x + it->x) / 2.0f));
-          if (z > zz)
+          float curz = TestZ(pid, i, (int)std::round(((*it)->x + (*nxt)->x) / 2.0f));
+          if (z > curz)
           {
-            z = zz;
+            z = curz;
             target = pid;
           }
         }
-        // COMMENT: 着色
-        if (target == polygons.size())
+
+        if (target != polygons.size())
         {
-          RenderSegment(canvas, i, cit->x, it->x, canvas.color);
+          RenderSegment(canvas, i, (*it)->x, (*nxt)->x, polygons[target].color);
         }
-        else
-        {
-          RenderSegment(canvas, i, cit->x, it->x, polygons[target].color);
-        }
-        // SDL_UpdateWindowSurface(canvas.window);
       }
-      for (auto& each : AET)
+      
+      for (auto& edge : AET)
       {
-        each.ymin += 1;
-        each.e += each.m;
-        while(each.e > 0.0f)
+        edge->ymin += 1;
+        edge->e += edge->m;
+        while(edge->e > 0.0f)
         {
-          each.x += each.delta;
-          each.e -= 1.0f;
+          edge->x += edge->d;
+          edge->e -= 1.0f;
         }
       }
     }

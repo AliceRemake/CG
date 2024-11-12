@@ -140,6 +140,7 @@ struct Canvas
   int height                                         = {};
   Color color                                        = {};
   uint32_t* pixels                                   = {};
+  float z                                            = {};
   float** zbuffer                                    = {};
   HZBufferNode* h_zbuffer_tree                       = {};
   SDL_Window* window                                 = {};
@@ -151,10 +152,8 @@ struct Canvas
 struct Setting
 {
   enum Algorithm {
-    ZBuffer,
-    ScanLine,
-    HZBuffer,
-    HZBufferHAABB,
+    ScanConvertZBuffer,
+    IntervalScanLine,
   };
   
   bool show_normal    = {};

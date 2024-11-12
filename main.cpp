@@ -50,8 +50,8 @@ int main(const int argc, char** argv)
   }
   
   // COMMENT: Create A Render For Controller. GPU Accelerated.
-  SDL_Renderer* renderer = SDL_CreateRenderer(controller_window, nullptr);
-  if (renderer == nullptr)
+  SDL_Renderer* controller_renderer = SDL_CreateRenderer(controller_window, nullptr);
+  if (controller_renderer == nullptr)
   {
     Fatal("Can Not Create Renderer! %s\n", SDL_GetError());
   }
@@ -61,7 +61,7 @@ int main(const int argc, char** argv)
   setting.show_wireframe = false;
   setting.enable_cull = true;
   setting.enable_clip = true;
-  setting.algorithm = Setting::ZBuffer;
+  setting.algorithm = Setting::ScanConvertZBuffer;
 
   canvas.offsetx = 0;
   canvas.offsety = 0;
@@ -76,7 +76,8 @@ int main(const int argc, char** argv)
   {
     canvas.zbuffer[i] = new float[canvas.width];
   }
-  canvas.h_zbuffer_tree = Accelerator::BuildHZBufferTree(canvas, 0, canvas.height-1, 0, canvas.width-1);
+  canvas.z = 1E9;
+  // canvas.h_zbuffer_tree = Accelerator::BuildHZBufferTree(canvas, 0, canvas.height-1, 0, canvas.width-1);
   
   camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
   camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -91,20 +92,22 @@ int main(const int argc, char** argv)
   
   // COMMENT: Set Up Basic Scene.
   Model m;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "teapot.obj").string().c_str(), m);
+  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bunny.obj").string().c_str(), m);
   scene.models.emplace_back(std::move(m));
   scene.lights.emplace_back(Light {
-    .position = glm::vec3(0.0f, 2.0f, 2.0f),
+    .position = glm::vec3(0.0f, 1000.0f, 1000.0f),
     .color = glm::vec3(1.0f),
   });
   selected_model = &scene.models.front();
   
   // COMMENT: Set Up Controller.
-  Controller::SetUp(controller_window, renderer);
+  Controller::SetUp(controller_window, controller_renderer);
   
   // COMMENT: Everything Is Ready. Show The Window.
+  SDL_SetWindowPosition(renderer_window, 0, 100);
   SDL_ShowWindow(renderer_window);
-  // SDL_ShowWindow(controller_window);
+  SDL_SetWindowPosition(controller_window, RENDERER_WIDTH, 100);
+  SDL_ShowWindow(controller_window);
   
   // COMMENT: Main Loop.
   bool running = true;
@@ -145,21 +148,20 @@ int main(const int argc, char** argv)
     }
 
     // COMMENT: First. Clear Data From Last Frame.
-    SDL_ClearSurface(canvas.surface, 0.0f, 0.0f, 0.0f, 0.0f);
-    for (int i = 0; i < canvas.height; ++i)
+    SDL_ClearSurface(canvas.surface, canvas.color.r, canvas.color.g, canvas.color.b, 1.0f);
+    if (setting.algorithm == Setting::ScanConvertZBuffer)
     {
-      for (int j = 0; j < canvas.width; ++j)
+      for (int i = 0; i < canvas.height; ++i)
       {
-        canvas.zbuffer[i][j] = 1E9;
+        for (int j = 0; j < canvas.width; ++j)
+        {
+          canvas.zbuffer[i][j] = canvas.z;
+        }
       }
     }
-    // if (setting.h_zbuffer_acc)
-    // {
-    //   Accelerator::ReSetHZBufferTree(canvas.h_zbuffer_tree);
-    // }
 
     // COMMENT: Second. Update On Each Frame.
-    Controller::OnUpdate(renderer);
+    Controller::OnUpdate(controller_renderer);
     Actor::OnUpdate(canvas);
     Actor::OnUpdate(camera);
 
@@ -184,7 +186,7 @@ int main(const int argc, char** argv)
   delete[] canvas.zbuffer;
   Accelerator::DestroyHZBufferTree(canvas.h_zbuffer_tree);
   SDL_DestroySurface(canvas.surface);
-  SDL_DestroyRenderer(renderer);
+  SDL_DestroyRenderer(controller_renderer);
   SDL_DestroyWindow(controller_window);
   SDL_DestroyWindow(renderer_window);
 
