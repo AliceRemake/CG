@@ -15,91 +15,69 @@
 
 #include <Common.h>
 
-// COMMENT: Basic Data Structures. All Mathematics. No Geometry Meaning.
 using Color = glm::vec3;
 using Vertex = glm::vec3;
 using Vector = glm::vec3;
 using Normal = glm::vec3;
 
-// COMMENT: Geometry Primitives For Rendering.
-struct Line
+struct Polygon;
+
+struct AABB
 {
-  uint32_t vertices[2] = {};
-  Color color = {};
+  glm::vec3 vmin   = {};
+  glm::vec3 vmax   = {};
+  AABB* l          = {};
+  AABB* r          = {};
+  Polygon* polygon = {};
+  
+  NODISCARD FORCE_INLINE static Vertex Center(const AABB& aabb) NOEXCEPT;
+
+  NODISCARD FORCE_INLINE static Vector Radius(const AABB& aabb) NOEXCEPT;
+
+  NODISCARD FORCE_INLINE static AABB From(const std::vector<Vertex>& vertices, Polygon& polygon) NOEXCEPT;
+
+  NODISCARD FORCE_INLINE static bool OverLap(const AABB& lhs, const AABB& rhs) NOEXCEPT;
 };
 
 struct Polygon
 {
   std::vector<uint32_t> vertices = {};
   Color color = {};
+  AABB aabb   = {};
+
+  NODISCARD FORCE_INLINE static Vertex Center(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
+
+  NODISCARD FORCE_INLINE static Normal Normal(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
 };
 
-struct AABB
-{
-  Vertex vmin;
-  Vertex vmax;
-
-  static Vertex Center(const AABB& aabb) NOEXCEPT
-  {
-    return (aabb.vmin + aabb.vmax) / 2.0f; 
-  }
-
-  static Vector Radius(const AABB& aabb) NOEXCEPT
-  {
-    return (aabb.vmax - aabb.vmin) / 2.0f;
-  }
-  
-  static AABB From(const std::vector<Vertex>& vertices, const Line& line) NOEXCEPT
-  {
-    return AABB {
-      .vmin = glm::min(vertices[line.vertices[0]], vertices[line.vertices[1]]),
-      .vmax = glm::max(vertices[line.vertices[0]], vertices[line.vertices[1]]),
-    };
-  }
-
-  static AABB From(const std::vector<Vertex>& vertices, const struct Polygon& polygon) NOEXCEPT
-  {
-    AABB aabb = { .vmin = glm::vec3(1E9), .vmax = glm::vec3(-1E9) };
-    for (const auto& vertex : polygon.vertices)
-    {
-      aabb.vmin = glm::min(aabb.vmin, vertices[vertex]);  
-      aabb.vmax = glm::max(aabb.vmax, vertices[vertex]);  
-    }
-    return aabb;
-  }
-
-};
-
-
-
-// COMMENT: 3D Model.
 struct Model
 {
   struct Index
   {
-    uint32_t vertex  = (uint32_t)-1;
-    uint32_t texture = (uint32_t)-1;
-    uint32_t normal  = (uint32_t)-1;
+    uint32_t vertex   = (uint32_t)-1;
   };
 
   std::string name = {};
   
-  // COMMENT: Raw Data Read From .obj File.
-  std::vector<Vertex> vertices = {};
-  std::vector<Vertex> textures = {};
-  std::vector<Normal> normals  = {};
-  std::vector<Index> indices   = {};
+  std::vector<Vertex> vertices  = {};
+  std::vector<Index> indices    = {};
 
-  // COMMENT: Number Of Vertices In A Polygon.
-  std::vector<uint32_t> polygons = {};
+  std::vector<uint32_t> polygon_sides = {};
   
-  // COMMENT: Transformations.
   glm::vec3 scale     = {};
   glm::vec3 rotate    = {};
   glm::vec3 translate = {};
+
+  NODISCARD FORCE_INLINE static Model FromObj(const char* filename) NOEXCEPT;
 };
 
-struct Light
+struct ParallelLight
+{
+  Vector direction = {};
+  Color color      = {};  
+};
+
+struct PointLight
 {
   Vertex position = {};
   Color color     = {};
@@ -107,11 +85,11 @@ struct Light
 
 struct Scene
 {
-  std::list<Model> models = {};
-  std::vector<Light> lights = {};
+  std::list<Model> models                  = {};
+  std::list<ParallelLight> parallel_lights = {};
+  std::list<PointLight> point_lights       = {};
 };
 
-// COMMENT: Classic FPS Style Camera.
 struct Camera
 {
   Vertex position  = {};
@@ -126,32 +104,57 @@ struct Camera
   float far        = {};
 };
 
-struct HZBufferNode;
-
-// COMMENT: Canvas For Rendering. (aka Viewport In Hardware).
-struct Canvas
+struct FrameBuffer
 {
-  int offsetx                                        = {};
-  int offsety                                        = {};
-  int width                                          = {};
-  int height                                         = {};
-  Color color                                        = {};
-  uint32_t* pixels                                   = {};
-  float z                                            = {};
-  float** zbuffer                                    = {};
-  HZBufferNode* h_zbuffer_tree                       = {};
-  SDL_Window* window                                 = {};
-  SDL_Surface* surface                               = {};
-  const SDL_PixelFormatDetails* pixel_format_details = {};
+  SDL_Window* window                   = {};
+  SDL_Surface* surface                 = {};
+  const SDL_PixelFormatDetails* format = {};
+
+  int width      = {};
+  int height     = {};
+  Color bgc      = {};
+  Uint32* buffer = {};
+
+  NODISCARD FORCE_INLINE static FrameBuffer From(SDL_Window* window, const Color& bgc) NOEXCEPT;
+
+  FORCE_INLINE static void Display(const FrameBuffer& frame_buffer) NOEXCEPT;
+
+  FORCE_INLINE static void Clear(const FrameBuffer& frame_buffer) NOEXCEPT;
 };
 
-// COMMENT: Setting Of The Application.
+struct ZBuffer
+{
+  int width      = {};
+  int height     = {};
+  float bgz      = {};
+  float** buffer = {};
+
+  NODISCARD FORCE_INLINE static ZBuffer From(const FrameBuffer& frame_buffer, float bgz) NOEXCEPT;
+
+  FORCE_INLINE static void Clear(const ZBuffer& z_buffer) NOEXCEPT;
+};
+
+struct HZBuffer;
+
+struct Canvas
+{
+  int offsetx               = {};
+  int offsety               = {};
+  int width                 = {};
+  int height                = {};
+  FrameBuffer* frame_buffer = {};
+  ZBuffer* z_buffer         = {};
+  HZBuffer* h_z_buffer      = {};
+
+  NODISCARD FORCE_INLINE static Canvas From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, int offsetx, int offsety, int width, int height) NOEXCEPT;
+};
+
 struct Setting
 {
   enum Algorithm {
     ScanConvertZBuffer,
-    IntervalScanLine,
     ScanConvertHZBuffer,
+    IntervalScanLine,
   };
   
   bool show_normal    = {};

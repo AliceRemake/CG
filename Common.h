@@ -18,7 +18,6 @@
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_opengl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
@@ -29,19 +28,28 @@
 #include <cstdlib>
 #include <cstdint>
 #include <bitset>
+#include <numeric>
 #include <list>
 #include <array>
 #include <vector>
 #include <string>
+#include <queue>
+#include <deque>
+#include <unordered_set>
+#include <unordered_map>
 #include <iostream>
 #include <filesystem>
-
-#undef near
-#undef far
+#include <algorithm>
+#include <functional>
 
 #define NODISCARD [[nodiscard]]
 #define NOEXCEPT noexcept
 #define CONSTEXPR constexpr
+#ifdef NDEBUG
+  #define FORCE_INLINE
+#else
+  #define FORCE_INLINE
+#endif
 
 #define __STR(s) #s
 #define STR(s) __STR(s)
@@ -57,7 +65,7 @@
   #define Info(...)                                                                       \
     do {                                                                                  \
       fmt::fprintf(stderr, "\033[0m[%s:%d]\033[0;32m[INFO]\033[0m:", __FILE__, __LINE__); \
-      fmt::fprintf(stderr, __VA_ARGS__);                                                  \
+      fmt::fprintf(stderr, __VA_ARGS__); putchar('\n'); fflush(stderr);                   \
     } while (0)
 #else
   #define Info(...)
@@ -67,7 +75,7 @@
   #define Warn(...)                                                                       \
     do {                                                                                  \
       fmt::fprintf(stderr, "\033[0m[%s:%d]\033[1;33m[WARN]\033[0m:", __FILE__, __LINE__); \
-      fmt::fprintf(stderr, __VA_ARGS__);                                                  \
+      fmt::fprintf(stderr, __VA_ARGS__); putchar('\n'); fflush(stderr);                   \
     } while (0)
 #else
   #define Warn(...)
@@ -76,8 +84,8 @@
 #define Fatal(...)                                                                       \
   do {                                                                                   \
     fmt::fprintf(stderr, "\033[0m[%s:%d]\033[0;31m[ERROR]\033[0m:", __FILE__, __LINE__); \
-    fmt::fprintf(stderr, __VA_ARGS__);                                                   \
-    exit(1);                                                                             \
+    fmt::fprintf(stderr, __VA_ARGS__); putchar('\n'); fflush(stderr);                    \
+    exit(EXIT_FAILURE);                                                                  \
   } while (0)
 
 #ifdef NDEBUG
@@ -87,18 +95,12 @@
 #endif
 
 #ifdef NDEBUG
-  #define ASSERT(exp) (void)exp
+  #define ASSERT(exp) (void)(exp)
 #else
   #define ASSERT(exp) do { if(!(exp)) DEBUGBREAK(); } while (0)
 #endif
 
-template<typename T>
-using Array1 = std::array<T, 1>;
-
-template<typename T>
-using Array2 = std::array<T, 2>;
-
-template<typename T>
-using Array3 = std::array<T, 3>;
+CONSTEXPR float INF = std::numeric_limits<float>::infinity();
+CONSTEXPR float EPS = std::numeric_limits<float>::epsilon();
 
 #endif //COMMON_H

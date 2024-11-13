@@ -15,7 +15,7 @@
 
 #include <Common.h>
 #include <Entity.h>
-#include <Accelerator.h>
+// #include <Accelerator.h>
 
 // COMMENT: Actor System. For Updating Entities And Handling Events.
 struct Actor
@@ -38,10 +38,10 @@ struct Actor
     });
   }
 
-  static void OnUpdate(const Canvas& canvas) NOEXCEPT
-  {
-    SDL_ClearSurface(canvas.surface, 0.40f, 0.45f, 0.50f, 1.0f);
-  }
+  // static void OnUpdate(const Canvas& canvas) NOEXCEPT
+  // {
+  //   SDL_ClearSurface(canvas.surface, 0.40f, 0.45f, 0.50f, 1.0f);
+  // }
   
   static void OnEvent(Model& m, const SDL_Event* event) NOEXCEPT
   {
