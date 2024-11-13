@@ -16,6 +16,7 @@
 #include <Common.h>
 #include <Entity.h>
 
+// FIXME: Bug Look From Close.
 struct HZBuffer
 {
   float zmax;

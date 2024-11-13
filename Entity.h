@@ -151,17 +151,24 @@ struct Canvas
 
 struct Setting
 {
-  enum Algorithm {
+  enum Algorithm
+  {
     ScanConvertZBuffer,
     ScanConvertHZBuffer,
     IntervalScanLine,
   };
+  enum DisplayMode
+  {
+    NORMAL,
+    WIREFRAME,
+  };
   
-  bool show_normal    = {};
-  bool show_wireframe = {};
-  bool enable_cull    = {};
-  bool enable_clip    = {};
-  Algorithm algorithm = {};
+  bool show_normal         = {};
+  bool show_z_buffer       = {};
+  bool enable_cull         = {};
+  bool enable_clip         = {};
+  Algorithm algorithm      = {};
+  DisplayMode display_mode = {};
 };
 
 #endif //ENTITY_H

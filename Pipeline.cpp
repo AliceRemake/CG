@@ -196,11 +196,7 @@ FORCE_INLINE void Pipeline::Render(const Setting& setting, const Shader::Config&
       vertex = t.xyz() / t.w;
     }
 
-    if (setting.show_wireframe)
-    {
-      Rasterizer::RenderPolygonsWireframe(canvas, vertices, polygons);
-    }
-    else
+    if (setting.display_mode == Setting::NORMAL)
     {
       if (setting.algorithm == Setting::ScanConvertZBuffer)
       {
@@ -215,10 +211,33 @@ FORCE_INLINE void Pipeline::Render(const Setting& setting, const Shader::Config&
         Rasterizer::RenderPolygonsIntervalScanLine(canvas, vertices, polygons);
       }
     }
+    else
+    {
+      ASSERT(setting.display_mode == Setting::WIREFRAME);
+      Rasterizer::RenderPolygonsWireframe(canvas, vertices, polygons);
+    }
 
     if (setting.show_normal)
     {
       Rasterizer::RenderPolygonsWireframe(canvas, vertices, polygon_normals);
+    }
+
+    if (setting.show_z_buffer)
+    {
+      for (int y = canvas.offsety; y < canvas.offsety + canvas.height; ++y)
+      {
+        for (int x = canvas.offsetx; x < canvas.offsetx + canvas.width; ++x)
+        {
+          if (canvas.z_buffer->buffer[y][x] == INF)
+          {
+            Rasterizer::RenderPixel(*canvas.frame_buffer, x, y, Rasterizer::MapColor(*canvas.frame_buffer, Color(0.0f)));
+          }
+          else
+          {
+            Rasterizer::RenderPixel(*canvas.frame_buffer, x, y, Rasterizer::MapColor(*canvas.frame_buffer, Color(canvas.z_buffer->buffer[y][x] / 2.0f)));
+          }
+        }
+      }
     }
   }
 }

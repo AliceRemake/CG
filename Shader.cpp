@@ -14,6 +14,7 @@
 
 NODISCARD FORCE_INLINE Color Shader::BlinnPhong(const std::vector<ParallelLight>& parallel_lights, const std::vector<PointLight>& point_lights, const Vertex& vertex, const Normal& normal, const Config& config) NOEXCEPT
 {
+  // TODO: Energy
   const Color ambient = config.ka * glm::vec3(1.0f);
     
   auto diffuse = Color(0.0f);

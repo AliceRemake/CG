@@ -21,6 +21,8 @@ Canvas canvas;
 Camera camera;
 Scene scene;
 Model* selected_model;
+ParallelLight* selected_parallel_light;
+PointLight* selected_point_light;
 
 int main(const int argc, char** argv)
 {
@@ -49,11 +51,12 @@ int main(const int argc, char** argv)
     Fatal("Can Not Create Renderer! %s\n", SDL_GetError());
   }
 
-  setting.show_normal    = false;
-  setting.show_wireframe = false;
-  setting.enable_cull    = true;
-  setting.enable_clip    = true;
-  setting.algorithm      = Setting::IntervalScanLine;
+  setting.show_normal   = false;
+  setting.show_z_buffer = false;
+  setting.enable_cull   = true;
+  setting.enable_clip   = true;
+  setting.algorithm     = Setting::IntervalScanLine;
+  setting.display_mode  = Setting::NORMAL;
 
   config.ka = 0.1f;
   config.kd = 0.5f;
@@ -73,7 +76,7 @@ int main(const int argc, char** argv)
   canvas.z_buffer     = &z_buffer;
   canvas.h_z_buffer   = HZBuffer::Build(canvas, 0, canvas.width-1, 0, canvas.height-1);
 
-  camera.position  = Vertex(0.0f, 0.0f, 5.0f);
+  camera.position  = Vertex(0.0f, 0.0f, 2.0f);
   camera.direction = Vector(0.0f, 0.0f, -1.0f);
   camera.up        = Vector(0.0f, 1.0f, 0.0f);
   camera.right     = Vector(1.0f, 0.0f, 0.0f);
@@ -82,25 +85,27 @@ int main(const int argc, char** argv)
   camera.fov       = glm::radians(75.0f);
   camera.aspect    = 4.0f / 3.0f;
   camera.near      = 0.1f;
-  camera.far       = 10.0f;
+  camera.far       = 4.0f;
 
   Model model;
   Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bun_zipper_res2.obj").string().c_str(), model);
   model.rotate.y = glm::radians(45.0f);
   
   ParallelLight parallel_light;
-  parallel_light.direction = Vector(0.0f, 1.0f, -1.0f);
+  parallel_light.direction = Vector(0.0f, -1.0f, 1.0f);
   parallel_light.color     = Color(1.0f , 1.0f, 1.0f);
 
   PointLight point_light;
-  point_light.position = Vertex(0.0f, -1000.0f, 1000.0f);
-  point_light.color    = Color(1.0f , 1.0f    , 1.0f);
+  point_light.position = Vertex(0.0f, 2.0f, 2.0f),
+  point_light.color    = Color(1.0f , 1.0f, 1.0f);
   
   scene.models.emplace_back(std::move(model));
   scene.parallel_lights.emplace_back(parallel_light);
   scene.point_lights.emplace_back(point_light);
 
   selected_model = &scene.models.front();
+  selected_parallel_light = &scene.parallel_lights.front();
+  selected_point_light = &scene.point_lights.front();
   
   Controller::SetUp(controller_window, controller_renderer);
   

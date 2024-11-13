@@ -56,10 +56,6 @@ struct Rasterizer
   {
     RenderSegment(frame_buffer, xmin, xmax, y, MapColor(frame_buffer, color));
   }
-  static void RenderSegment(const Canvas& canvas, const int xmin, const int xmax, const int y, const Color& color) NOEXCEPT
-  {
-    RenderSegment(*canvas.frame_buffer, canvas.offsetx + xmin, canvas.offsetx + xmax, canvas.offsetx + y, MapColor(*canvas.frame_buffer, color));
-  }
   
   // COMMENT: Render A Tangent From (x0, y0) To (x1, y1). Use Algorithm DDA.
   static void RenderTangentDDA(const Canvas& canvas, int x0, int y0, int x1, int y1, const Uint32& color) NOEXCEPT
@@ -587,7 +583,7 @@ struct Rasterizer
             if (canvas.z_buffer->buffer[y][x] > curz)
             {
               canvas.z_buffer->buffer[y][x] = curz;
-              RenderPixel(*canvas.frame_buffer, x, y, polygons[pid].color);
+              RenderPixel(*canvas.frame_buffer, canvas.offsetx + x, canvas.offsety + y, polygons[pid].color);
             }
           }
         }
@@ -790,7 +786,7 @@ struct Rasterizer
 
         if (target != polygons.size())
         {
-          RenderSegment(canvas, std::max((*it)->x, 0), std::min((*nxt)->x, canvas.width-1), y, polygons[target].color);
+          RenderSegment(*canvas.frame_buffer, std::max(canvas.offsetx + (*it)->x, 0), std::min(canvas.offsetx + (*nxt)->x, canvas.width-1), canvas.offsety + y, polygons[target].color);
         }
       }
          
