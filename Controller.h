@@ -17,19 +17,18 @@
 #include <Entity.h>
 #include <Shader.h>
 #include <Loader.h>
-#include <Initializer.h>
 
+extern Setting setting;
+extern Shader::Config config;
+extern FrameBuffer frame_buffer;
+extern ZBuffer z_buffer;
 extern Canvas canvas;
 extern Camera camera;
 extern Scene scene;
-extern Shader::Config config;
-extern Setting setting;
 extern Model* selected_model;
 
-// COMMENT: Controller System. For Debugging And Playing.
 struct Controller
 {
-  // COMMENT: Copy From ImGui Examples.
   static void SetUp(SDL_Window* window, SDL_Renderer* renderer) NOEXCEPT
   {
     IMGUI_CHECKVERSION();
@@ -46,7 +45,6 @@ struct Controller
     Style();
   }
 
-  // COMMENT: Copy From ImGui Examples.
   static void ShutDown() NOEXCEPT
   {
     ImGui_ImplSDLRenderer3_Shutdown();
@@ -54,13 +52,11 @@ struct Controller
     ImGui::DestroyContext();
   }
 
-  // COMMENT: Copy From ImGui Examples.
   static void OnEvent(const SDL_Event* event) NOEXCEPT
   {
     ImGui_ImplSDL3_ProcessEvent(event);
   }
 
-  // COMMENT: Copy From ImGui Examples.
   static void OnUpdate(SDL_Renderer* renderer) NOEXCEPT
   {
     ImGui_ImplSDLRenderer3_NewFrame();
@@ -123,7 +119,6 @@ struct Controller
     style.Colors[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
   }
 
-  // TODO Add Log
   static void UI() NOEXCEPT
   {
     const ImGuiID dock_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
@@ -161,6 +156,12 @@ struct Controller
       ImGui::Checkbox("Show Wireframe", &setting.show_wireframe);
       ImGui::Checkbox("Enable Cull", &setting.enable_cull);
       ImGui::Checkbox("Enable Clip", &setting.enable_clip);
+      static const char* const items[] = {
+        "Scan Convert ZBuffer",
+        "Scan Convert Hierarchical ZBuffer",
+        "Interval ScanLine",
+      };
+      ImGui::Combo("Algorithm", (int*)&setting.algorithm, items, 3);
 
       ImGui::Unindent(10.0f);
     }
@@ -169,25 +170,63 @@ struct Controller
     {
       ImGui::Indent(10.0f);
 
-      // TODO Use Table
-      ImGui::Text("Position");
-      ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-      ImGui::Text("(%.1f, %.1f, %.1f)", camera.position.x, camera.position.y, camera.position.z);
-      ImGui::Text("Direction");
-      ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-      ImGui::Text("(%.1f, %.1f, %.1f)", camera.direction.x, camera.direction.y, camera.direction.z);
-      ImGui::Text("Up");
-      ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-      ImGui::Text("(%.1f, %.1f, %.1f)", camera.up.x, camera.up.y, camera.up.z);
-      ImGui::Text("Right");
-      ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-      ImGui::Text("(%.1f, %.1f, %.1f)", camera.right.x, camera.right.y, camera.right.z);
-      ImGui::Text("Yaw");
-      ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-      ImGui::Text("%.1f", glm::degrees(camera.yaw));
-      ImGui::Text("Pitch");
-      ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-      ImGui::Text("%.1f", glm::degrees(camera.pitch));
+      if (ImGui::BeginTable("##CameraTable", 4))
+      {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Property");
+        ImGui::TableNextColumn();
+        ImGui::Text("X");
+        ImGui::TableNextColumn();
+        ImGui::Text("Y");
+        ImGui::TableNextColumn();
+        ImGui::Text("Z");
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Position");
+        ImGui::TableNextColumn();
+        ImGui::DragFloat("##CameraPositionX", &camera.position.x, 0.1f, -10.0f, 10.0f);
+        ImGui::TableNextColumn();
+        ImGui::DragFloat("##CameraPositionY", &camera.position.y, 0.1f, -10.0f, 10.0f);
+        ImGui::TableNextColumn();
+        ImGui::DragFloat("##CameraPositionZ", &camera.position.z, 0.1f, -10.0f, 10.0f);
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Direction");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.direction.x);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.direction.y);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.direction.z);
+        
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Up");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.up.x);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.up.y);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.up.z);
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Right");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.right.x);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.right.y);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", camera.right.z);
+
+        ImGui::EndTable();
+      }
+      
+      ImGui::SliderAngle("Yaw", &camera.yaw, 0.0f, 360.0f);
+      ImGui::SliderAngle("Pitch", &camera.pitch, -89.0f, 89.0f);
       ImGui::SliderAngle("Fov", &camera.fov, 30.0f, 120.0f);
       ImGui::DragFloat("Aspect", &camera.aspect, 0.1f, 0.1f, 10.0f);
       ImGui::DragFloat("Near", &camera.near, 0.1f, 0.1f, camera.far);
@@ -195,16 +234,16 @@ struct Controller
 
       if (ImGui::Button("Reset Camera", ImVec2(ImGui::GetWindowWidth() - 25.0f, 0.0f)))
       {
-        camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
-        camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
-        camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
-        camera.right = glm::vec3(1.0f, 0.0f, 0.0f);
-        camera.yaw = glm::radians(180.0f);
-        camera.pitch = 0.0f;
-        camera.fov = glm::radians(75.0f);
-        camera.aspect = 4.0f / 3.0f;
-        camera.near = 0.1f;
-        camera.far = 10.0f;
+        camera.position  = Vertex(0.0f, 0.0f, 5.0f);
+        camera.direction = Vector(0.0f, 0.0f, -1.0f);
+        camera.up        = Vector(0.0f, 1.0f, 0.0f);
+        camera.right     = Vector(1.0f, 0.0f, 0.0f);
+        camera.yaw       = glm::radians(180.0f);
+        camera.pitch     = 0.0f;
+        camera.fov       = glm::radians(75.0f);
+        camera.aspect    = 4.0f / 3.0f;
+        camera.near      = 0.1f;
+        camera.far       = 10.0f;
       }
 
       ImGui::Unindent(10.0f);
@@ -338,47 +377,6 @@ struct Controller
             selected_model = nullptr;
             selected = (size_t)-1;
           }
-        }
-        
-        ImGui::Unindent(10.0f);
-      }
-
-      // TODO Use List
-      if (ImGui::CollapsingHeader("Lights"))
-      {
-        ImGui::Indent(10.0f);
-        
-        ImGui::Text("Light Number");
-        ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-        ImGui::Text("%llu", scene.lights.size());
-        if (ImGui::Button("Push Light"))
-        {
-          scene.lights.emplace_back(Light{
-            .position = glm::vec3(0.0f, 2.0f, 2.0f),
-            .color = glm::vec3(1.0f),
-          });
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Pop Light"))
-        {
-          if (!scene.lights.empty())
-          {
-            scene.lights.pop_back();
-          }
-        }
-
-        for (size_t i = 0; i < scene.lights.size(); ++i)
-        {
-          ImGui::PushID(i);
-          if (ImGui::TreeNode(&scene.lights[i], "Light %llu", i))
-          {
-            ImGui::Text("Position");
-            ImGui::SameLine(ImGui::GetWindowWidth() - 200.0f);
-            ImGui::Text("(%.1f, %.1f, %.1f)", scene.lights[i].position.x, scene.lights[i].position.y, scene.lights[i].position.z);
-            ImGui::ColorPicker3("Color", (float*)&scene.lights[i].color, ImGuiColorEditFlags_Float);
-            ImGui::TreePop();
-          }
-          ImGui::PopID();
         }
         
         ImGui::Unindent(10.0f);
