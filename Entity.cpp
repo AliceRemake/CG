@@ -13,14 +13,14 @@
 #include <Entity.h>
 #include <Loader.h>
 
-NODISCARD FORCE_INLINE Vertex Polygon::Center(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT
+NODISCARD  Vertex Polygon::Center(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT
 {
   return std::accumulate(polygon.vertices.begin(), polygon.vertices.end(), Vertex(0.0f), [&](const Vertex& acc, const uint32_t vertex) -> Vertex {
     return acc + vertices[vertex];
   }) / (float)polygon.vertices.size();
 }
 
-NODISCARD FORCE_INLINE Normal Polygon::Normal(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT
+NODISCARD  Normal Polygon::Normal(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT
 {
   if (polygon.vertices.size() < 3)
   {
@@ -31,21 +31,20 @@ NODISCARD FORCE_INLINE Normal Polygon::Normal(const std::vector<Vertex>& vertice
   return glm::normalize(glm::cross(v0, v1));
 }
 
-NODISCARD FORCE_INLINE Vertex AABB::Center(const AABB& aabb) NOEXCEPT
+NODISCARD  Vertex AABB::Center(const AABB& aabb) NOEXCEPT
 {
   return (aabb.vmin + aabb.vmax) / 2.0f; 
 }
 
-NODISCARD FORCE_INLINE Vector AABB::Radius(const AABB& aabb) NOEXCEPT
+NODISCARD  Vector AABB::Radius(const AABB& aabb) NOEXCEPT
 {
   return (aabb.vmax - aabb.vmin) / 2.0f;
 }
 
-NODISCARD FORCE_INLINE AABB AABB::From(const std::vector<Vertex>& vertices, Polygon& polygon) NOEXCEPT
+NODISCARD  AABB AABB::From(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT
 {
   AABB aabb = {
     .vmin = glm::vec3(INF), .vmax = glm::vec3(-INF),
-    .l = nullptr, .r = nullptr, .polygon = &polygon,
   };
   for (const auto& vertex : polygon.vertices)
   {
@@ -55,14 +54,14 @@ NODISCARD FORCE_INLINE AABB AABB::From(const std::vector<Vertex>& vertices, Poly
   return aabb;
 }
 
-NODISCARD FORCE_INLINE bool AABB::OverLap(const AABB& lhs, const AABB& rhs) NOEXCEPT
+NODISCARD  bool AABB::OverLap(const AABB& lhs, const AABB& rhs) NOEXCEPT
 {
-  return (lhs.vmin.x <= rhs.vmax.x || rhs.vmin.x <= lhs.vmax.x)
-      && (lhs.vmin.y <= rhs.vmax.y || rhs.vmin.y <= lhs.vmax.y)
-      && (lhs.vmin.z <= rhs.vmax.z || rhs.vmin.z <= lhs.vmax.z);
+  return (lhs.vmin.x <= rhs.vmax.x && rhs.vmin.x <= lhs.vmax.x)
+      && (lhs.vmin.y <= rhs.vmax.y && rhs.vmin.y <= lhs.vmax.y)
+      && (lhs.vmin.z <= rhs.vmax.z && rhs.vmin.z <= lhs.vmax.z);
 }
 
-NODISCARD FORCE_INLINE Model Model::FromObj(const char* filename) NOEXCEPT
+NODISCARD  Model Model::FromObj(const char* filename) NOEXCEPT
 {
   Model model;
   if (Loader::LoadObj(filename, model) != Loader::SUCCESS)
@@ -72,7 +71,7 @@ NODISCARD FORCE_INLINE Model Model::FromObj(const char* filename) NOEXCEPT
   return model;
 }
 
-NODISCARD FORCE_INLINE FrameBuffer FrameBuffer::From(SDL_Window* window, const Color& bgc) NOEXCEPT
+NODISCARD  FrameBuffer FrameBuffer::From(SDL_Window* window, const Color& bgc) NOEXCEPT
 {
   FrameBuffer frame_buffer;
   frame_buffer.window = window;
@@ -85,17 +84,17 @@ NODISCARD FORCE_INLINE FrameBuffer FrameBuffer::From(SDL_Window* window, const C
   return frame_buffer;
 }
 
-FORCE_INLINE void FrameBuffer::Display(const FrameBuffer& frame_buffer) NOEXCEPT
+ void FrameBuffer::Display(const FrameBuffer& frame_buffer) NOEXCEPT
 {
   SDL_UpdateWindowSurface(frame_buffer.window);
 }
 
-FORCE_INLINE void FrameBuffer::Clear(const FrameBuffer& frame_buffer) NOEXCEPT
+ void FrameBuffer::Clear(const FrameBuffer& frame_buffer) NOEXCEPT
 {
   SDL_ClearSurface(frame_buffer.surface, frame_buffer.bgc.r, frame_buffer.bgc.g, frame_buffer.bgc.b, 0.0f);
 }
 
-NODISCARD FORCE_INLINE ZBuffer ZBuffer::From(const FrameBuffer& frame_buffer, const float bgz) NOEXCEPT
+NODISCARD  ZBuffer ZBuffer::From(const FrameBuffer& frame_buffer, const float bgz) NOEXCEPT
 {
   ZBuffer z_buffer;
   z_buffer.width = frame_buffer.width;
@@ -109,7 +108,7 @@ NODISCARD FORCE_INLINE ZBuffer ZBuffer::From(const FrameBuffer& frame_buffer, co
   return z_buffer;
 }
 
-FORCE_INLINE void ZBuffer::Clear(const ZBuffer& z_buffer) NOEXCEPT
+ void ZBuffer::Clear(const ZBuffer& z_buffer) NOEXCEPT
 {
   for (int i = 0; i < z_buffer.height; ++i)
   {
@@ -120,7 +119,7 @@ FORCE_INLINE void ZBuffer::Clear(const ZBuffer& z_buffer) NOEXCEPT
   }
 }
 
-NODISCARD FORCE_INLINE Canvas Canvas::From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, const int offsetx, const int offsety, const int width, const int height) NOEXCEPT
+NODISCARD  Canvas Canvas::From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, const int offsetx, const int offsety, const int width, const int height) NOEXCEPT
 {
   ASSERT(0 <= offsetx && 0 <= width && offsetx + width < frame_buffer.width);
   ASSERT(0 <= offsety && 0 <= height && offsety + height < frame_buffer.height);

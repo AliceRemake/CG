@@ -12,7 +12,7 @@
 
 #include <Loader.h>
 
-FORCE_INLINE Loader::Result Loader::LoadObj(const char* filename, Model& model) NOEXCEPT
+ Loader::Result Loader::LoadObj(const char* filename, Model& model) NOEXCEPT
 {
 
   // COMMENT: Open File.

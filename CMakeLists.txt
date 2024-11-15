@@ -1,12 +1,21 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.29)
 
-PROJECT(SoftwareRenderer)
+PROJECT(SoftwareRenderer
+  VERSION 1.0.0
+  DESCRIPTION "CG Homework 2024 Fall"
+  HOMEPAGE_URL "https://github.com/AliceRemake/SoftwareRenderer"
+  LANGUAGES C CXX
+)
 
-SET(CMAKE_CXX_STANDARD 23)
+SET(CMAKE_CXX_STANDARD 20 REQUIRED)
 
 ADD_SUBDIRECTORY(External)
 
 ADD_EXECUTABLE(SoftwareRenderer)
+
+IF(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+  MESSAGE(FATAL_ERROR "Unsupported Compiler: MSVC")
+ENDIF()
 
 IF(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   TARGET_COMPILE_DEFINITIONS(SoftwareRenderer PUBLIC
@@ -35,10 +44,8 @@ TARGET_INCLUDE_DIRECTORIES(SoftwareRenderer PUBLIC
 
 TARGET_SOURCES(SoftwareRenderer PUBLIC
   main.cpp
-  Controller.h
   Actor.h
-  Acceleration/Parallel.cpp
-  Acceleration/Parallel.h
+  Controller.h
   Acceleration/HAABB.cpp
   Acceleration/HAABB.h
   Acceleration/HZBuffer.cpp
@@ -63,4 +70,8 @@ TARGET_LINK_LIBRARIES(SoftwareRenderer PUBLIC
   SDL3-static
   glm
   fmt
+)
+
+TARGET_LINK_OPTIONS(SoftwareRenderer PUBLIC
+  "-mwindows"
 )

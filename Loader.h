@@ -28,7 +28,7 @@ struct Loader
     ERROR_READ_FILE,
   };
   
-  FORCE_INLINE static Result LoadObj(const char* filename, Model& model) NOEXCEPT;
+   static Result LoadObj(const char* filename, Model& model) NOEXCEPT;
 };
 
 #endif //LOADER_H

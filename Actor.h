@@ -21,7 +21,7 @@
 struct Actor
 {
   // COMMENT: Update Direction, Up, Right Of The Camera.
-  static void OnUpdate(Camera& camera) NOEXCEPT
+   static void OnUpdate(Camera& camera) NOEXCEPT
   {
     camera.direction = glm::normalize(glm::vec3{
       glm::cos(camera.pitch) * glm::sin(camera.yaw),
@@ -37,13 +37,8 @@ struct Actor
       camera.direction.x,
     });
   }
-
-  // static void OnUpdate(const Canvas& canvas) NOEXCEPT
-  // {
-  //   SDL_ClearSurface(canvas.surface, 0.40f, 0.45f, 0.50f, 1.0f);
-  // }
   
-  static void OnEvent(Model& m, const SDL_Event* event) NOEXCEPT
+   static void OnEvent(Model& m, const SDL_Event* event) NOEXCEPT
   {
     // COMMENT: Use Mouse Wheel To Scale Model.
     if (event->type == SDL_EVENT_MOUSE_WHEEL)
@@ -66,7 +61,7 @@ struct Actor
     }
   }
   
-  static void OnEvent(Camera& camera, const SDL_Event* event) NOEXCEPT
+   static void OnEvent(Camera& camera, const SDL_Event* event) NOEXCEPT
   {
     // COMMENT: W/A/S/D/Space/Shift To Move Camera Forward/Left/Backward/Right/Up/Down.
     if (event->type == SDL_EVENT_KEY_DOWN)
@@ -90,11 +85,11 @@ struct Actor
       // NOTE: Y Is Flipped In Screen Space.
       if (event->key.key == SDLK_SPACE)
       {
-          camera.position -= 0.1f * camera.up;
+          camera.position += 0.1f * camera.up;
       }
       if (event->key.key == SDLK_LSHIFT)
       {
-          camera.position += 0.1f * camera.up;
+          camera.position -= 0.1f * camera.up;
       }
     }
     // COMMENT: Hold Right Button And Drag To Move Camera Direction.

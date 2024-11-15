@@ -28,10 +28,11 @@ extern Scene scene;
 extern Model* selected_model;
 extern ParallelLight* selected_parallel_light;
 extern PointLight* selected_point_light;
+extern size_t frame_time;
 
 struct Controller
 {
-  static void SetUp(SDL_Window* window, SDL_Renderer* renderer) NOEXCEPT
+   static void SetUp(SDL_Window* window, SDL_Renderer* renderer) NOEXCEPT
   {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -47,19 +48,19 @@ struct Controller
     Style();
   }
 
-  static void ShutDown() NOEXCEPT
+   static void ShutDown() NOEXCEPT
   {
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
   }
 
-  static void OnEvent(const SDL_Event* event) NOEXCEPT
+   static void OnEvent(const SDL_Event* event) NOEXCEPT
   {
     ImGui_ImplSDL3_ProcessEvent(event);
   }
 
-  static void OnUpdate(SDL_Renderer* renderer) NOEXCEPT
+   static void OnUpdate(SDL_Renderer* renderer) NOEXCEPT
   {
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -71,7 +72,7 @@ struct Controller
   }
 
   // Ref: https://github.com/ocornut/imgui/issues/707
-  static void Style() NOEXCEPT
+   static void Style() NOEXCEPT
   {
     ImGui::GetIO().Fonts->AddFontFromFileTTF((std::filesystem::path(STR(PROJECT_DIR)) / "Font" / "Roboto-Medium.ttf").string().c_str(), 18.0f);
 
@@ -121,7 +122,7 @@ struct Controller
     style.Colors[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
   }
 
-  static void UI() NOEXCEPT
+   static void UI() NOEXCEPT
   {
     const ImGuiID dock_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
@@ -133,6 +134,8 @@ struct Controller
     ImGui::SetNextWindowDockID(dock_id);
     ImGui::Begin("Controller");
 
+    ImGui::Text("Frame Time(ms): %llu", frame_time);
+    
     if (ImGui::CollapsingHeader("Help", ImGuiTreeNodeFlags_DefaultOpen))
     {
       ImGui::Indent(10.0f);
@@ -154,6 +157,7 @@ struct Controller
     {
       ImGui::Indent(10.0f);
 
+      ImGui::Checkbox("Show AABB", &setting.show_aabb);
       ImGui::Checkbox("Show Normal", &setting.show_normal);
       ImGui::Checkbox("Show ZBuffer", &setting.show_z_buffer);
       ImGui::Checkbox("Enable Cull", &setting.enable_cull);
@@ -162,9 +166,10 @@ struct Controller
         static const char* const items[] = {
           "Scan Convert ZBuffer",
           "Scan Convert Hierarchical ZBuffer",
+          "Scan Convert Hierarchical AABB Hierarchical ZBuffer",
           "Interval ScanLine",
         };
-        ImGui::Combo("Algorithm", (int*)&setting.algorithm, items, 3);
+        ImGui::Combo("Algorithm", (int*)&setting.algorithm, items, 4);
       }
       {
         static const char* const items[] = {
