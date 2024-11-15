@@ -10,6 +10,9 @@
 
 
 
+#ifndef HZBUFFER_HPP
+#define HZBUFFER_HPP
+
 #include <Acceleration/HZBuffer.h>
 
 NODISCARD HZBuffer* HZBuffer::Build(const Canvas& canvas, const int xmin, const int xmax, const int ymin, const int ymax) NOEXCEPT // NOLINT(*-no-recursion)
@@ -93,31 +96,19 @@ NODISCARD float HZBuffer::Query(const HZBuffer* tree, const int xmin, const int 
 
   float zmax = -INF;
   
-  if (tree->ll != nullptr
-    && ((tree->ll->xmin <= xmin && xmin <= tree->ll->xmax) || (tree->ll->xmin <= xmax && xmax <= tree->ll->xmax))
-    && ((tree->ll->ymin <= ymin && ymin <= tree->ll->ymax) || (tree->ll->ymin <= ymax && ymax <= tree->ll->ymax))
-  )
+  if (tree->ll != nullptr && (tree->ll->xmin <= xmax && xmin <= tree->ll->xmax) && (tree->ll->ymin <= ymax && ymin <= tree->ll->ymax))
   {
     zmax = std::max(zmax, Query(tree->ll, xmin, xmax, ymin, ymax));
   }
-  if (tree->lr != nullptr
-    && ((tree->lr->xmin <= xmin && xmin <= tree->lr->xmax) || (tree->lr->xmin <= xmax && xmax <= tree->lr->xmax))
-    && ((tree->lr->ymin <= ymin && ymin <= tree->lr->ymax) || (tree->lr->ymin <= ymax && ymax <= tree->lr->ymax))
-  )
+  if (tree->lr != nullptr && (tree->lr->xmin <= xmax && xmin <= tree->lr->xmax) && (tree->lr->ymin <= ymax && ymin <= tree->lr->ymax))
   {
     zmax = std::max(zmax, Query(tree->lr, xmin, xmax, ymin, ymax));
   }
-  if (tree->ul != nullptr
-    && ((tree->ul->xmin <= xmin && xmin <= tree->ul->xmax) || (tree->ul->xmin <= xmax && xmax <= tree->ul->xmax))
-    && ((tree->ul->ymin <= ymin && ymin <= tree->ul->ymax) || (tree->ul->ymin <= ymax && ymax <= tree->ul->ymax))
-  )
+  if (tree->ul != nullptr && (tree->ul->xmin <= xmax && xmin <= tree->ul->xmax) && (tree->ul->ymin <= ymax && ymin <= tree->ul->ymax))
   {
     zmax = std::max(zmax, Query(tree->ul, xmin, xmax, ymin, ymax));
   }
-  if (tree->ur != nullptr
-    && ((tree->ur->xmin <= xmin && xmin <= tree->ur->xmax) || (tree->ur->xmin <= xmax && xmax <= tree->ur->xmax))
-    && ((tree->ur->ymin <= ymin && ymin <= tree->ur->ymax) || (tree->ur->ymin <= ymax && ymax <= tree->ur->ymax))
-  )
+  if (tree->ur != nullptr && (tree->ur->xmin <= xmax && xmin <= tree->ur->xmax) && (tree->ur->ymin <= ymax && ymin <= tree->ur->ymax))
   {
     zmax = std::max(zmax, Query(tree->ur, xmin, xmax, ymin, ymax));
   }
@@ -136,36 +127,31 @@ void HZBuffer::Update(HZBuffer* tree, const Canvas& canvas, const int xmin, cons
     tree->zmax = canvas.z_buffer->buffer[tree->ymin][tree->xmin];
     return;
   }
-  if (tree->ll != nullptr
-    && ((tree->ll->xmin <= xmin && xmin <= tree->ll->xmax) || (tree->ll->xmin <= xmax && xmax <= tree->ll->xmax))
-    && ((tree->ll->ymin <= ymin && ymin <= tree->ll->ymax) || (tree->ll->ymin <= ymax && ymax <= tree->ll->ymax))
-  )
+
+  tree->zmax = -INF;
+  
+  if (tree->ll != nullptr && (tree->ll->xmin <= xmax && xmin <= tree->ll->xmax) && (tree->ll->ymin <= ymax && ymin <= tree->ll->ymax))
   {
     Update(tree->ll, canvas, xmin, xmax, ymin, ymax);
     tree->zmax = std::max(tree->zmax, tree->ll->zmax);
   }
-  if (tree->lr != nullptr
-    && ((tree->lr->xmin <= xmin && xmin <= tree->lr->xmax) || (tree->lr->xmin <= xmax && xmax <= tree->lr->xmax))
-    && ((tree->lr->ymin <= ymin && ymin <= tree->lr->ymax) || (tree->lr->ymin <= ymax && ymax <= tree->lr->ymax))
-  )
+  if (tree->lr != nullptr && (tree->lr->xmin <= xmax && xmin <= tree->lr->xmax) && (tree->lr->ymin <= ymax && ymin <= tree->lr->ymax))
   {
     Update(tree->lr, canvas, xmin, xmax, ymin, ymax);
     tree->zmax = std::max(tree->zmax, tree->lr->zmax);
   }
-  if (tree->ul != nullptr
-    && ((tree->ul->xmin <= xmin && xmin <= tree->ul->xmax) || (tree->ul->xmin <= xmax && xmax <= tree->ul->xmax))
-    && ((tree->ul->ymin <= ymin && ymin <= tree->ul->ymax) || (tree->ul->ymin <= ymax && ymax <= tree->ul->ymax))
-  )
+  if (tree->ul != nullptr && (tree->ul->xmin <= xmax && xmin <= tree->ul->xmax) && (tree->ul->ymin <= ymax && ymin <= tree->ul->ymax))
   {
     Update(tree->ul, canvas, xmin, xmax, ymin, ymax);
     tree->zmax = std::max(tree->zmax, tree->ul->zmax);
   }
-  if (tree->ur != nullptr
-    && ((tree->ur->xmin <= xmin && xmin <= tree->ur->xmax) || (tree->ur->xmin <= xmax && xmax <= tree->ur->xmax))
-    && ((tree->ur->ymin <= ymin && ymin <= tree->ur->ymax) || (tree->ur->ymin <= ymax && ymax <= tree->ur->ymax))
-  )
+  if (tree->ur != nullptr && (tree->ur->xmin <= xmax && xmin <= tree->ur->xmax) && (tree->ur->ymin <= ymax && ymin <= tree->ur->ymax))
   {
     Update(tree->ur, canvas, xmin, xmax, ymin, ymax);
     tree->zmax = std::max(tree->zmax, tree->ur->zmax);
   }
+
+  ASSERT(tree->zmax != -INF);
 }
+
+#endif //HZBUFFER_HPP

@@ -26,7 +26,7 @@ struct Shader
     float ps = 2.5f;
   };
 
-  NODISCARD FORCE_INLINE static Color BlinnPhong(const std::vector<ParallelLight>& parallel_lights, const std::vector<PointLight>& point_lights, const Vertex& vertex, const Normal& normal, const Config& config) NOEXCEPT;
+  NODISCARD  static Color BlinnPhong(const std::vector<ParallelLight>& parallel_lights, const std::vector<PointLight>& point_lights, const Vertex& vertex, const Normal& normal, const Config& config) NOEXCEPT;
 };
 
 #endif //SHADER_H

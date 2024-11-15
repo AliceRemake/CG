@@ -31,10 +31,11 @@
 #include <numeric>
 #include <list>
 #include <array>
-#include <vector>
-#include <string>
+#include <stack>
 #include <queue>
 #include <deque>
+#include <vector>
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
 #include <iostream>
@@ -45,11 +46,6 @@
 #define NODISCARD [[nodiscard]]
 #define NOEXCEPT noexcept
 #define CONSTEXPR constexpr
-#ifdef NDEBUG
-  #define FORCE_INLINE
-#else
-  #define FORCE_INLINE
-#endif
 
 #define __STR(s) #s
 #define STR(s) __STR(s)

@@ -1,17 +1,15 @@
 #include <Common.h>
 #include <Entity.h>
-#include <Loader.h>
-#include <Shader.h>
 #include <Pipeline.h>
 #include <Actor.h>
 #include <Controller.h>
 #include <Acceleration/HZBuffer.h>
 
-CONSTEXPR int RENDERER_WIDTH = 1280;
-CONSTEXPR int RENDERER_HEIGHT = 960;
+CONSTEXPR int RENDERER_WIDTH = 800;
+CONSTEXPR int RENDERER_HEIGHT = 600;
 
 CONSTEXPR int CONTROLLER_WIDTH = 600;
-CONSTEXPR int CONTROLLER_HEIGHT = 960;
+CONSTEXPR int CONTROLLER_HEIGHT = 600;
 
 Setting setting;
 Shader::Config config;
@@ -23,11 +21,12 @@ Scene scene;
 Model* selected_model;
 ParallelLight* selected_parallel_light;
 PointLight* selected_point_light;
+size_t frame_time;
 
 int main(const int argc, char** argv)
 {
   (void)argc; (void)argv;
-
+  
   if (!SDL_Init(SDL_INIT_VIDEO))
   {
     Fatal("Can Not Init SDL!\n");
@@ -51,11 +50,12 @@ int main(const int argc, char** argv)
     Fatal("Can Not Create Renderer! %s\n", SDL_GetError());
   }
 
+  setting.show_aabb     = true;
   setting.show_normal   = false;
   setting.show_z_buffer = false;
   setting.enable_cull   = true;
   setting.enable_clip   = true;
-  setting.algorithm     = Setting::IntervalScanLine;
+  setting.algorithm     = Setting::ScanConvertZBuffer;
   setting.display_mode  = Setting::NORMAL;
 
   config.ka = 0.1f;
@@ -70,8 +70,8 @@ int main(const int argc, char** argv)
 
   canvas.offsetx      = 0;
   canvas.offsety      = 0;
-  canvas.width        = 1280;
-  canvas.height       = 960;
+  canvas.width        = RENDERER_WIDTH;
+  canvas.height       = RENDERER_HEIGHT;
   canvas.frame_buffer = &frame_buffer;
   canvas.z_buffer     = &z_buffer;
   canvas.h_z_buffer   = HZBuffer::Build(canvas, 0, canvas.width-1, 0, canvas.height-1);
@@ -82,26 +82,35 @@ int main(const int argc, char** argv)
   camera.right     = Vector(1.0f, 0.0f, 0.0f);
   camera.yaw       = glm::radians(180.0f);
   camera.pitch     = 0.0f;
-  camera.fov       = glm::radians(75.0f);
+  camera.fov       = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
   camera.aspect    = 4.0f / 3.0f;
   camera.near      = 0.1f;
-  camera.far       = 4.0f;
+  camera.far       = 100.0f;
 
   Model model;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bun_zipper_res2.obj").string().c_str(), model);
-  model.rotate.y = glm::radians(45.0f);
+  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "geodesic_dual_classIII_20_7.obj").string().c_str(), model);
   
-  ParallelLight parallel_light;
-  parallel_light.direction = Vector(0.0f, -1.0f, 1.0f);
-  parallel_light.color     = Color(1.0f , 1.0f, 1.0f);
+  ParallelLight parallel_light_0;
+  parallel_light_0.direction = Vector(1.0f, -1.0f, 0.0f);
+  parallel_light_0.color     = Color(1.0f , 0.5f, 0.5f);
 
-  PointLight point_light;
-  point_light.position = Vertex(0.0f, 2.0f, 2.0f),
-  point_light.color    = Color(1.0f , 1.0f, 1.0f);
-  
-  scene.models.emplace_back(std::move(model));
-  scene.parallel_lights.emplace_back(parallel_light);
-  scene.point_lights.emplace_back(point_light);
+  ParallelLight parallel_light_1;
+  parallel_light_1.direction = Vector(1.0f, 1.0f, 0.0f);
+  parallel_light_1.color     = Color(0.5f , 0.5f, 1.0f);
+
+  PointLight point_light_0;
+  point_light_0.position = Vertex(2.0f, 2.0f, 0.0f),
+  point_light_0.color    = Color(0.5f , 1.0f, 0.5f);
+
+  PointLight point_light_1;
+  point_light_1.position = Vertex(2.0f, -2.0f, 0.0f),
+  point_light_1.color    = Color(1.0f , 1.0f, 1.0f);
+
+  scene.models.emplace_back(model);
+  scene.parallel_lights.emplace_back(parallel_light_0);
+  scene.parallel_lights.emplace_back(parallel_light_1);
+  scene.point_lights.emplace_back(point_light_0);
+  scene.point_lights.emplace_back(point_light_1);
 
   selected_model = &scene.models.front();
   selected_parallel_light = &scene.parallel_lights.front();
@@ -147,13 +156,37 @@ int main(const int argc, char** argv)
     }
 
     FrameBuffer::Clear(frame_buffer);
-    ZBuffer::Clear(z_buffer);
-    HZBuffer::Clear(canvas.h_z_buffer, canvas);
+
+    // COMMENT: Begin Render. 
+
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
+    switch (setting.algorithm)
+    {
+      case Setting::ScanConvertZBuffer:
+        ZBuffer::Clear(z_buffer);
+      break;
+      case Setting::ScanConvertHZBuffer: 
+      case Setting::ScanConvertHAABBHZBuffer:
+        ZBuffer::Clear(z_buffer);
+        HZBuffer::Clear(canvas.h_z_buffer, canvas);
+      break;
+      case Setting::IntervalScanLine: 
+      break;
+      default:
+        Fatal("Unsupported Algorithm");
+    }
 
     Controller::OnUpdate(controller_renderer);
     Actor::OnUpdate(camera);
 
     Pipeline::Render(setting, config, canvas, camera, scene);
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    frame_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+
+    // COMMENT: End Render. 
 
     FrameBuffer::Display(frame_buffer);
   }

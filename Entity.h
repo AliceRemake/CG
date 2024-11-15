@@ -26,28 +26,24 @@ struct AABB
 {
   glm::vec3 vmin   = {};
   glm::vec3 vmax   = {};
-  AABB* l          = {};
-  AABB* r          = {};
-  Polygon* polygon = {};
   
-  NODISCARD FORCE_INLINE static Vertex Center(const AABB& aabb) NOEXCEPT;
+  NODISCARD  static Vertex Center(const AABB& aabb) NOEXCEPT;
 
-  NODISCARD FORCE_INLINE static Vector Radius(const AABB& aabb) NOEXCEPT;
+  NODISCARD  static Vector Radius(const AABB& aabb) NOEXCEPT;
 
-  NODISCARD FORCE_INLINE static AABB From(const std::vector<Vertex>& vertices, Polygon& polygon) NOEXCEPT;
+  NODISCARD  static AABB From(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
 
-  NODISCARD FORCE_INLINE static bool OverLap(const AABB& lhs, const AABB& rhs) NOEXCEPT;
+  NODISCARD  static bool OverLap(const AABB& lhs, const AABB& rhs) NOEXCEPT;
 };
 
 struct Polygon
 {
   std::vector<uint32_t> vertices = {};
   Color color = {};
-  AABB aabb   = {};
 
-  NODISCARD FORCE_INLINE static Vertex Center(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
+  NODISCARD  static Vertex Center(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
 
-  NODISCARD FORCE_INLINE static Normal Normal(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
+  NODISCARD  static Normal Normal(const std::vector<Vertex>& vertices, const Polygon& polygon) NOEXCEPT;
 };
 
 struct Model
@@ -68,7 +64,7 @@ struct Model
   glm::vec3 rotate    = {};
   glm::vec3 translate = {};
 
-  NODISCARD FORCE_INLINE static Model FromObj(const char* filename) NOEXCEPT;
+  NODISCARD  static Model FromObj(const char* filename) NOEXCEPT;
 };
 
 struct ParallelLight
@@ -115,11 +111,11 @@ struct FrameBuffer
   Color bgc      = {};
   Uint32* buffer = {};
 
-  NODISCARD FORCE_INLINE static FrameBuffer From(SDL_Window* window, const Color& bgc) NOEXCEPT;
+  NODISCARD  static FrameBuffer From(SDL_Window* window, const Color& bgc) NOEXCEPT;
 
-  FORCE_INLINE static void Display(const FrameBuffer& frame_buffer) NOEXCEPT;
+   static void Display(const FrameBuffer& frame_buffer) NOEXCEPT;
 
-  FORCE_INLINE static void Clear(const FrameBuffer& frame_buffer) NOEXCEPT;
+   static void Clear(const FrameBuffer& frame_buffer) NOEXCEPT;
 };
 
 struct ZBuffer
@@ -129,9 +125,9 @@ struct ZBuffer
   float bgz      = {};
   float** buffer = {};
 
-  NODISCARD FORCE_INLINE static ZBuffer From(const FrameBuffer& frame_buffer, float bgz) NOEXCEPT;
+  NODISCARD  static ZBuffer From(const FrameBuffer& frame_buffer, float bgz) NOEXCEPT;
 
-  FORCE_INLINE static void Clear(const ZBuffer& z_buffer) NOEXCEPT;
+   static void Clear(const ZBuffer& z_buffer) NOEXCEPT;
 };
 
 struct HZBuffer;
@@ -146,7 +142,7 @@ struct Canvas
   ZBuffer* z_buffer         = {};
   HZBuffer* h_z_buffer      = {};
 
-  NODISCARD FORCE_INLINE static Canvas From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, int offsetx, int offsety, int width, int height) NOEXCEPT;
+  NODISCARD  static Canvas From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, int offsetx, int offsety, int width, int height) NOEXCEPT;
 };
 
 struct Setting
@@ -155,6 +151,7 @@ struct Setting
   {
     ScanConvertZBuffer,
     ScanConvertHZBuffer,
+    ScanConvertHAABBHZBuffer,
     IntervalScanLine,
   };
   enum DisplayMode
@@ -163,6 +160,7 @@ struct Setting
     WIREFRAME,
   };
   
+  bool show_aabb           = {};
   bool show_normal         = {};
   bool show_z_buffer       = {};
   bool enable_cull         = {};
