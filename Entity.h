@@ -130,7 +130,67 @@ struct ZBuffer
    static void Clear(const ZBuffer& z_buffer) NOEXCEPT;
 };
 
-struct HZBuffer;
+struct Canvas;
+
+struct ZBH
+{
+    bool valid = false;
+    float zmax = -INF;
+    int xmin   = -1;
+    int xmax   = -1;
+    int ymin   = -1;
+    int ymax   = -1;
+
+    FORCE_INLINE NODISCARD static int Log2(const int x) NOEXCEPT
+    {
+        return ((int)sizeof(uint32_t) << 3) - std::countl_zero((uint32_t)x - 1);
+    }
+
+    FORCE_INLINE NODISCARD static int Pow4(const int x) NOEXCEPT
+    {
+        return (1 << (x << 1));
+    }
+    
+    FORCE_INLINE NODISCARD static int Father(const int cur) NOEXCEPT
+    {
+        ASSERT(cur != 0);
+        return (cur - 1) >> 2;
+    }
+    
+    FORCE_INLINE NODISCARD static int Child0(const int cur) NOEXCEPT
+    {
+        return (cur << 2) | 1;
+    }
+    
+    FORCE_INLINE NODISCARD static int Child1(const int cur) NOEXCEPT
+    {
+        return (cur << 2) | 2;
+    }
+    
+    FORCE_INLINE NODISCARD static int Child2(const int cur) NOEXCEPT
+    {
+        return (cur << 2) | 3;
+    }
+    
+    FORCE_INLINE NODISCARD static int Child3(const int cur) NOEXCEPT
+    {
+        return (cur << 2) + 4;
+    }
+
+    FORCE_INLINE NODISCARD static int Child(const int cur, const int i) NOEXCEPT
+    {
+        return (cur << 2) + 1 + i;
+    }
+    
+    NODISCARD static std::vector<ZBH> From(const Canvas& canvas) NOEXCEPT;
+    
+    // ReSharper disable once CppParameterMayBeConstPtrOrRef
+    static void Clear(std::vector<ZBH>& zbh_tree, Canvas& canvas) NOEXCEPT;
+    
+    NODISCARD static float Query(const std::vector<ZBH>& zbh_tree, int xmin, int xmax, int ymin, int ymax) NOEXCEPT;
+    
+    static void Update(std::vector<ZBH>& zbh_tree, Canvas& canvas, int xmin, int xmax, int ymin, int ymax) NOEXCEPT;
+};
 
 struct Canvas
 {
@@ -140,8 +200,9 @@ struct Canvas
   int height                = {};
   FrameBuffer* frame_buffer = {};
   ZBuffer* z_buffer         = {};
-  HZBuffer* h_z_buffer      = {};
-
+  // HZBuffer* h_z_buffer      = {};
+  std::vector<ZBH> zbh_tree = {}; 
+    
   NODISCARD  static Canvas From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, int offsetx, int offsety, int width, int height) NOEXCEPT;
 };
 

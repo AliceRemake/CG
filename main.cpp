@@ -3,13 +3,12 @@
 #include <Pipeline.h>
 #include <Actor.h>
 #include <Controller.h>
-#include <Acceleration/HZBuffer.h>
 
-CONSTEXPR int RENDERER_WIDTH = 800;
-CONSTEXPR int RENDERER_HEIGHT = 600;
+CONSTEXPR int RENDERER_WIDTH = 1024;
+CONSTEXPR int RENDERER_HEIGHT = 1024;
 
-CONSTEXPR int CONTROLLER_WIDTH = 600;
-CONSTEXPR int CONTROLLER_HEIGHT = 600;
+CONSTEXPR int CONTROLLER_WIDTH = 512;
+CONSTEXPR int CONTROLLER_HEIGHT = 1024;
 
 Setting setting;
 Shader::Config config;
@@ -50,7 +49,7 @@ int main(const int argc, char** argv)
     Fatal("Can Not Create Renderer! %s\n", SDL_GetError());
   }
 
-  setting.show_aabb     = true;
+  setting.show_aabb     = false;
   setting.show_normal   = false;
   setting.show_z_buffer = false;
   setting.enable_cull   = true;
@@ -74,7 +73,7 @@ int main(const int argc, char** argv)
   canvas.height       = RENDERER_HEIGHT;
   canvas.frame_buffer = &frame_buffer;
   canvas.z_buffer     = &z_buffer;
-  canvas.h_z_buffer   = HZBuffer::Build(canvas, 0, canvas.width-1, 0, canvas.height-1);
+  canvas.zbh_tree   = ZBH::From(canvas);
 
   camera.position  = Vertex(0.0f, 0.0f, 2.0f);
   camera.direction = Vector(0.0f, 0.0f, -1.0f);
@@ -82,8 +81,8 @@ int main(const int argc, char** argv)
   camera.right     = Vector(1.0f, 0.0f, 0.0f);
   camera.yaw       = glm::radians(180.0f);
   camera.pitch     = 0.0f;
-  camera.fov       = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
-  camera.aspect    = 4.0f / 3.0f;
+  camera.fov       = glm::radians(75.0f);
+  camera.aspect    = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
   camera.near      = 0.1f;
   camera.far       = 100.0f;
 
@@ -169,7 +168,7 @@ int main(const int argc, char** argv)
       case Setting::ScanConvertHZBuffer: 
       case Setting::ScanConvertHAABBHZBuffer:
         ZBuffer::Clear(z_buffer);
-        HZBuffer::Clear(canvas.h_z_buffer, canvas);
+        ZBH::Clear(canvas.zbh_tree, canvas);
       break;
       case Setting::IntervalScanLine: 
       break;

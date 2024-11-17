@@ -20,7 +20,7 @@
 // COMMENT: Pipeline System. For Rendering A Scene.
 struct Pipeline
 {
-   static void Render(const Setting& setting, const Shader::Config& config, const Canvas& canvas, const Camera& camera, const Scene& scene) NOEXCEPT;
+   static void Render(const Setting& setting, const Shader::Config& config, Canvas& canvas, const Camera& camera, const Scene& scene) NOEXCEPT;
 };
 
 #endif //PIPELINE_H
