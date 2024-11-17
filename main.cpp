@@ -5,11 +5,11 @@
 #include <Controller.h>
 #include <Acceleration/HZBuffer.h>
 
-CONSTEXPR int RENDERER_WIDTH = 800;
-CONSTEXPR int RENDERER_HEIGHT = 600;
+CONSTEXPR int RENDERER_WIDTH = 1024;
+CONSTEXPR int RENDERER_HEIGHT = 1024;
 
-CONSTEXPR int CONTROLLER_WIDTH = 600;
-CONSTEXPR int CONTROLLER_HEIGHT = 600;
+CONSTEXPR int CONTROLLER_WIDTH = 512;
+CONSTEXPR int CONTROLLER_HEIGHT = 1024;
 
 Setting setting;
 Shader::Config config;
@@ -82,13 +82,13 @@ int main(const int argc, char** argv)
   camera.right     = Vector(1.0f, 0.0f, 0.0f);
   camera.yaw       = glm::radians(180.0f);
   camera.pitch     = 0.0f;
-  camera.fov       = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
-  camera.aspect    = 4.0f / 3.0f;
+  camera.fov       = glm::radians(75.0f);
+  camera.aspect    = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
   camera.near      = 0.1f;
   camera.far       = 100.0f;
 
-  Model model;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "geodesic_dual_classIII_20_7.obj").string().c_str(), model);
+  // Model model;
+  // Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "geodesic_dual_classIII_20_7.obj").string().c_str(), model);
   
   ParallelLight parallel_light_0;
   parallel_light_0.direction = Vector(1.0f, -1.0f, 0.0f);
@@ -106,7 +106,7 @@ int main(const int argc, char** argv)
   point_light_1.position = Vertex(2.0f, -2.0f, 0.0f),
   point_light_1.color    = Color(1.0f , 1.0f, 1.0f);
 
-  scene.models.emplace_back(model);
+  // scene.models.emplace_back(model);
   scene.parallel_lights.emplace_back(parallel_light_0);
   scene.parallel_lights.emplace_back(parallel_light_1);
   scene.point_lights.emplace_back(point_light_0);
