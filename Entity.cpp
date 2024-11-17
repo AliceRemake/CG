@@ -235,7 +235,7 @@ void ZBH::Update(std::vector<ZBH>& zbh_tree, Canvas& canvas, const int xmin, con
     {
         ASSERT(zbh_tree[cur].valid);
 
-        for (int i = Child0(cur), j = 0; i < Child3(cur) && (size_t)i < zbh_tree.size(); ++i, ++j)
+        for (int i = Child0(cur), j = 0; i <= Child3(cur) && (size_t)i < zbh_tree.size(); ++i, ++j)
         {
             if (zbh_tree[i].valid && xmin <= zbh_tree[i].xmax && zbh_tree[i].xmin <= xmax && ymin <= zbh_tree[i].ymax && zbh_tree[i].ymin <= ymax)
             {
@@ -252,13 +252,15 @@ void ZBH::Update(std::vector<ZBH>& zbh_tree, Canvas& canvas, const int xmin, con
             zbh_tree[cur].zmax = canvas.z_buffer->buffer[zbh_tree[cur].ymin][zbh_tree[cur].xmin];
             continue;
         }
-        for (int i = Child0(cur); i < Child3(cur) && (size_t)i < zbh_tree.size(); ++i)
+        zbh_tree[cur].zmax = -INF;
+        for (int i = Child0(cur); i <= Child3(cur) && (size_t)i < zbh_tree.size(); ++i)
         {
             if (zbh_tree[i].valid)
             {
                 zbh_tree[cur].zmax = std::max(zbh_tree[cur].zmax, zbh_tree[i].zmax);
             }
         }
+        ASSERT(zbh_tree[cur].zmax != -INF);
     }
 }
 

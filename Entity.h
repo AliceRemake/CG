@@ -141,43 +141,43 @@ struct ZBH
     int ymin   = -1;
     int ymax   = -1;
 
-    FORCE_INLINE NODISCARD static int Log2(const int x) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Log2(const int x) NOEXCEPT
     {
         return ((int)sizeof(uint32_t) << 3) - std::countl_zero((uint32_t)x - 1);
     }
 
-    FORCE_INLINE NODISCARD static int Pow4(const int x) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Pow4(const int x) NOEXCEPT
     {
         return (1 << (x << 1));
     }
     
-    FORCE_INLINE NODISCARD static int Father(const int cur) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Father(const int cur) NOEXCEPT
     {
         ASSERT(cur != 0);
         return (cur - 1) >> 2;
     }
     
-    FORCE_INLINE NODISCARD static int Child0(const int cur) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Child0(const int cur) NOEXCEPT
     {
         return (cur << 2) | 1;
     }
     
-    FORCE_INLINE NODISCARD static int Child1(const int cur) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Child1(const int cur) NOEXCEPT
     {
         return (cur << 2) | 2;
     }
     
-    FORCE_INLINE NODISCARD static int Child2(const int cur) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Child2(const int cur) NOEXCEPT
     {
         return (cur << 2) | 3;
     }
     
-    FORCE_INLINE NODISCARD static int Child3(const int cur) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Child3(const int cur) NOEXCEPT
     {
         return (cur << 2) + 4;
     }
 
-    FORCE_INLINE NODISCARD static int Child(const int cur, const int i) NOEXCEPT
+    NODISCARD FORCE_INLINE static int Child(const int cur, const int i) NOEXCEPT
     {
         return (cur << 2) + 1 + i;
     }

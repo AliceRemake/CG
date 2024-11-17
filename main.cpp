@@ -54,7 +54,7 @@ int main(const int argc, char** argv)
   setting.show_z_buffer = false;
   setting.enable_cull   = true;
   setting.enable_clip   = true;
-  setting.algorithm     = Setting::ScanConvertZBuffer;
+  setting.algorithm     = Setting::ScanConvertHAABBHZBuffer;
   setting.display_mode  = Setting::NORMAL;
 
   config.ka = 0.1f;
@@ -86,9 +86,13 @@ int main(const int argc, char** argv)
   camera.near      = 0.1f;
   camera.far       = 100.0f;
 
-  Model model;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "geodesic_dual_classIII_20_7.obj").string().c_str(), model);
-  
+  Model cube;
+  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "cube.obj").string().c_str(), cube);
+    cube.scale = glm::vec3(0.75);
+    
+    Model bunny;
+    Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bun_zipper.obj").string().c_str(), bunny);
+    
   ParallelLight parallel_light_0;
   parallel_light_0.direction = Vector(1.0f, -1.0f, 0.0f);
   parallel_light_0.color     = Color(1.0f , 0.5f, 0.5f);
@@ -105,8 +109,29 @@ int main(const int argc, char** argv)
   point_light_1.position = Vertex(2.0f, -2.0f, 0.0f),
   point_light_1.color    = Color(1.0f , 1.0f, 1.0f);
 
-  scene.models.emplace_back(model);
-  scene.parallel_lights.emplace_back(parallel_light_0);
+  scene.models.emplace_back(cube);
+    bunny.translate.z = -1.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -2.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -3.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -4.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -5.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -6.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -7.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -8.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -9.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -10.0f;
+    scene.models.emplace_back(bunny);
+
+    scene.parallel_lights.emplace_back(parallel_light_0);
   scene.parallel_lights.emplace_back(parallel_light_1);
   scene.point_lights.emplace_back(point_light_0);
   scene.point_lights.emplace_back(point_light_1);
