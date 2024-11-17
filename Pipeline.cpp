@@ -14,7 +14,7 @@
 #include <Rasterizer.h>
 #include <Transformer.h>
 
- void Pipeline::Render(const Setting& setting, const Shader::Config& config, const Canvas& canvas, const Camera& camera, const Scene& scene) NOEXCEPT
+ void Pipeline::Render(const Setting& setting, const Shader::Config& config, Canvas& canvas, const Camera& camera, const Scene& scene) NOEXCEPT
 {
   static std::vector<ParallelLight> parallel_lights;         parallel_lights.clear();
   static std::vector<PointLight>    point_lights;            point_lights.clear();

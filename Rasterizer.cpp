@@ -403,7 +403,7 @@ void Rasterizer::RenderPolygonsScanConvertZBuffer(const Canvas& canvas, const st
   }
 }
 
-void Rasterizer::RenderPolygonsScanConvertHZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons) NOEXCEPT
+void Rasterizer::RenderPolygonsScanConvertHZBuffer(Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons) NOEXCEPT
 {
   std::vector<float> A; A.clear();
   std::vector<float> B; B.clear();
@@ -500,10 +500,14 @@ void Rasterizer::RenderPolygonsScanConvertHZBuffer(const Canvas& canvas, const s
     vmin = glm::max(vmin, glm::ivec2(0, 0));
     vmax = glm::min(vmax, glm::ivec2(canvas.width-1, canvas.height-1));
 
-    if (HZBuffer::Query(canvas.h_z_buffer, vmin.x, vmax.x, vmin.y, vmax.y) <= AABB::From(vertices, polygons[pid]).vmin.z)
+    if (ZBH::Query(canvas.zbh_tree, vmin.x, vmax.x, vmin.y, vmax.y) <= AABB::From(vertices, polygons[pid]).vmin.z)
     {
-      continue;;
+        continue;
     }
+      // if (HZBuffer::Query(canvas.h_z_buffer, vmin.x, vmax.x, vmin.y, vmax.y) <= AABB::From(vertices, polygons[pid]).vmin.z)
+    // {
+    //   continue;;
+    // }
 
     std::sort(ET.begin(), ET.end());
 
@@ -575,12 +579,12 @@ void Rasterizer::RenderPolygonsScanConvertHZBuffer(const Canvas& canvas, const s
       }
     }
 
-    HZBuffer::Update(canvas.h_z_buffer, canvas, vmin.x, vmax.x, vmin.y, vmax.y);
+    ZBH::Update(canvas.zbh_tree, canvas, vmin.x, vmax.x, vmin.y, vmax.y);
 
   }
 }
 
-void Rasterizer::RenderPolygonsScanConvertHAABBHZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons, const std::vector<HAABB>& haabbs) NOEXCEPT
+void Rasterizer::RenderPolygonsScanConvertHAABBHZBuffer(Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons, const std::vector<HAABB>& haabbs) NOEXCEPT
 {
   std::vector<float> A; A.clear();
   std::vector<float> B; B.clear();
@@ -617,7 +621,7 @@ void Rasterizer::RenderPolygonsScanConvertHAABBHZBuffer(const Canvas& canvas, co
   {
     int cur = stk.top();
     stk.pop();
-    float z = HZBuffer::Query(canvas.h_z_buffer, haabbs[cur].vmin.x, haabbs[cur].vmax.x, haabbs[cur].vmin.y, haabbs[cur].vmax.y);
+    float z = ZBH::Query(canvas.zbh_tree, haabbs[cur].vmin.x, haabbs[cur].vmax.x, haabbs[cur].vmin.y, haabbs[cur].vmax.y);
     if (z <= haabbs[cur].vmin.z)
     {
       continue;
@@ -762,7 +766,7 @@ void Rasterizer::RenderPolygonsScanConvertHAABBHZBuffer(const Canvas& canvas, co
         }
       }
       
-      HZBuffer::Update(canvas.h_z_buffer, canvas, vmin.x, vmax.x, vmin.y, vmax.y);
+      ZBH::Update(canvas.zbh_tree, canvas, vmin.x, vmax.x, vmin.y, vmax.y);
     }
   }
 }
