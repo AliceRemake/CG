@@ -3,13 +3,12 @@
 #include <Pipeline.h>
 #include <Actor.h>
 #include <Controller.h>
-#include <Acceleration/HZBuffer.h>
 
-CONSTEXPR int RENDERER_WIDTH = 800;
-CONSTEXPR int RENDERER_HEIGHT = 600;
+CONSTEXPR int RENDERER_WIDTH = 1024;
+CONSTEXPR int RENDERER_HEIGHT = 1024;
 
-CONSTEXPR int CONTROLLER_WIDTH = 600;
-CONSTEXPR int CONTROLLER_HEIGHT = 600;
+CONSTEXPR int CONTROLLER_WIDTH = 512;
+CONSTEXPR int CONTROLLER_HEIGHT = 1024;
 
 Setting setting;
 Shader::Config config;
@@ -50,12 +49,12 @@ int main(const int argc, char** argv)
     Fatal("Can Not Create Renderer! %s\n", SDL_GetError());
   }
 
-  setting.show_aabb     = true;
+  setting.show_aabb     = false;
   setting.show_normal   = false;
   setting.show_z_buffer = false;
   setting.enable_cull   = true;
   setting.enable_clip   = true;
-  setting.algorithm     = Setting::ScanConvertZBuffer;
+  setting.algorithm     = Setting::ScanConvertHAABBHZBuffer;
   setting.display_mode  = Setting::NORMAL;
 
   config.ka = 0.1f;
@@ -74,7 +73,7 @@ int main(const int argc, char** argv)
   canvas.height       = RENDERER_HEIGHT;
   canvas.frame_buffer = &frame_buffer;
   canvas.z_buffer     = &z_buffer;
-  canvas.h_z_buffer   = HZBuffer::Build(canvas, 0, canvas.width-1, 0, canvas.height-1);
+  canvas.zbh_tree   = ZBH::From(canvas);
 
   camera.position  = Vertex(0.0f, 0.0f, 2.0f);
   camera.direction = Vector(0.0f, 0.0f, -1.0f);
@@ -82,14 +81,18 @@ int main(const int argc, char** argv)
   camera.right     = Vector(1.0f, 0.0f, 0.0f);
   camera.yaw       = glm::radians(180.0f);
   camera.pitch     = 0.0f;
-  camera.fov       = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
-  camera.aspect    = 4.0f / 3.0f;
+  camera.fov       = glm::radians(75.0f);
+  camera.aspect    = (float)RENDERER_WIDTH / (float)RENDERER_HEIGHT;
   camera.near      = 0.1f;
   camera.far       = 100.0f;
 
-  Model model;
-  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "geodesic_dual_classIII_20_7.obj").string().c_str(), model);
-  
+  Model cube;
+  Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "cube.obj").string().c_str(), cube);
+    cube.scale = glm::vec3(0.75);
+    
+    Model bunny;
+    Loader::LoadObj((std::filesystem::path(STR(PROJECT_DIR)) / "Model" / "bun_zipper.obj").string().c_str(), bunny);
+    
   ParallelLight parallel_light_0;
   parallel_light_0.direction = Vector(1.0f, -1.0f, 0.0f);
   parallel_light_0.color     = Color(1.0f , 0.5f, 0.5f);
@@ -106,8 +109,29 @@ int main(const int argc, char** argv)
   point_light_1.position = Vertex(2.0f, -2.0f, 0.0f),
   point_light_1.color    = Color(1.0f , 1.0f, 1.0f);
 
-  scene.models.emplace_back(model);
-  scene.parallel_lights.emplace_back(parallel_light_0);
+  scene.models.emplace_back(cube);
+    bunny.translate.z = -1.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -2.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -3.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -4.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -5.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -6.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -7.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -8.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -9.0f;
+  scene.models.emplace_back(bunny);
+    bunny.translate.z = -10.0f;
+    scene.models.emplace_back(bunny);
+
+    scene.parallel_lights.emplace_back(parallel_light_0);
   scene.parallel_lights.emplace_back(parallel_light_1);
   scene.point_lights.emplace_back(point_light_0);
   scene.point_lights.emplace_back(point_light_1);
@@ -169,7 +193,7 @@ int main(const int argc, char** argv)
       case Setting::ScanConvertHZBuffer: 
       case Setting::ScanConvertHAABBHZBuffer:
         ZBuffer::Clear(z_buffer);
-        HZBuffer::Clear(canvas.h_z_buffer, canvas);
+        ZBH::Clear(canvas.zbh_tree, canvas);
       break;
       case Setting::IntervalScanLine: 
       break;

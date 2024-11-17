@@ -46,6 +46,7 @@
 #define NODISCARD [[nodiscard]]
 #define NOEXCEPT noexcept
 #define CONSTEXPR constexpr
+#define FORCE_INLINE inline __attribute__((always_inline))
 
 #define __STR(s) #s
 #define STR(s) __STR(s)

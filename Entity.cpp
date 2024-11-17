@@ -119,6 +119,151 @@ NODISCARD  ZBuffer ZBuffer::From(const FrameBuffer& frame_buffer, const float bg
   }
 }
 
+NODISCARD std::vector<ZBH> ZBH::From(const Canvas& canvas) NOEXCEPT
+{
+    std::vector<ZBH> zbh_tree;
+
+    zbh_tree.resize((Pow4(Log2(std::max(canvas.width, canvas.height)) + 1) - 1) / 3);
+
+    int front = 0, rear = 0;
+    static int* que = new int[zbh_tree.size()];
+
+    const float bgz = canvas.z_buffer->bgz;
+    
+    zbh_tree[0] = ZBH
+    {
+        .valid = true,
+        .zmax  = bgz,
+        .xmin  = 0,
+        .xmax  = canvas.width-1,
+        .ymin  = 0,
+        .ymax  = canvas.height-1,
+    };
+
+    if (zbh_tree[0].xmin == zbh_tree[0].xmax && zbh_tree[0].ymin == zbh_tree[0].ymax)
+    {
+        return zbh_tree;
+    }
+
+    que[rear++] = 0;
+
+    while(front < rear)
+    {
+        const int cur = que[front++];
+        const int xmin = zbh_tree[cur].xmin;
+        const int xmax = zbh_tree[cur].xmax;
+        const int ymin = zbh_tree[cur].ymin;
+        const int ymax = zbh_tree[cur].ymax;
+        const int xmid = (xmin + xmax) >> 1; 
+        const int ymid = (ymin + ymax) >> 1; 
+
+        for (int i = Child0(cur), j = 0; i <= Child3(cur) && (size_t)i < zbh_tree.size(); ++i, ++j)
+        {
+            zbh_tree[i].xmin = j & 1 ? xmid + 1 : xmin;
+            zbh_tree[i].xmax = j & 1 ? xmax : xmid;
+            zbh_tree[i].ymin = j & 2 ? ymid + 1 : ymin;
+            zbh_tree[i].ymax = j & 2 ? ymax : ymid;
+            zbh_tree[i].valid = true;
+            zbh_tree[i].zmax = bgz;
+            if (!(zbh_tree[i].xmin == zbh_tree[i].xmax && zbh_tree[i].ymin == zbh_tree[i].ymax))
+            {
+                que[rear++] = i;
+            }
+        }
+    }
+    
+    return zbh_tree;
+}
+
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
+void ZBH::Clear(std::vector<ZBH>& zbh_tree, Canvas& canvas) NOEXCEPT
+{
+    const float bgz = canvas.z_buffer->bgz;
+    for (auto& zbh : zbh_tree)
+    {
+        zbh.zmax = bgz;
+    }
+}
+
+NODISCARD float ZBH::Query(const std::vector<ZBH>& zbh_tree, const int xmin, const int xmax, const int ymin, const int ymax) NOEXCEPT
+{
+    ASSERT(!zbh_tree.empty());
+
+    float zmax = -INF;
+
+    int front = 0, rear = 0;
+    static int* que = new int[zbh_tree.size()];
+
+    que[rear++] = 0;
+    
+    while(front < rear)
+    {
+        const int cur = que[front++];
+
+        ASSERT(zbh_tree[cur].valid);
+
+        if (xmin <= zbh_tree[cur].xmin && zbh_tree[cur].xmax <= xmax && ymin <= zbh_tree[cur].ymin && zbh_tree[cur].ymax <= ymax)
+        {
+            zmax = std::max(zmax, zbh_tree[cur].zmax);
+            continue;
+        }
+
+        for (int i = Child0(cur); i <= Child3(cur) && (size_t)i < zbh_tree.size(); ++i)
+        {
+            if (zbh_tree[i].valid && xmin <= zbh_tree[i].xmax && zbh_tree[i].xmin <= xmax && ymin <= zbh_tree[i].ymax && zbh_tree[i].ymin <= ymax)
+            {
+                que[rear++] = i;
+            }
+        }
+    }
+
+    ASSERT(zmax != -INF);
+    
+    return zmax;
+}
+
+void ZBH::Update(std::vector<ZBH>& zbh_tree, Canvas& canvas, const int xmin, const int xmax, const int ymin, const int ymax) NOEXCEPT
+{
+    ASSERT(!zbh_tree.empty());
+
+    int top = 0;
+    static int* stk = new int[zbh_tree.size()];
+
+    stk[top++] = 0;
+
+    for (int cur = 0; cur < top; ++cur)
+    {
+        ASSERT(zbh_tree[cur].valid);
+
+        for (int i = Child0(cur), j = 0; i <= Child3(cur) && (size_t)i < zbh_tree.size(); ++i, ++j)
+        {
+            if (zbh_tree[i].valid && xmin <= zbh_tree[i].xmax && zbh_tree[i].xmin <= xmax && ymin <= zbh_tree[i].ymax && zbh_tree[i].ymin <= ymax)
+            {
+                stk[top++] = i;
+            }
+        }
+    }
+
+    while(top--)
+    {
+        const int cur = stk[top];
+        if (zbh_tree[cur].xmin == zbh_tree[cur].xmax && zbh_tree[cur].ymin == zbh_tree[cur].ymax)
+        {
+            zbh_tree[cur].zmax = canvas.z_buffer->buffer[zbh_tree[cur].ymin][zbh_tree[cur].xmin];
+            continue;
+        }
+        zbh_tree[cur].zmax = -INF;
+        for (int i = Child0(cur); i <= Child3(cur) && (size_t)i < zbh_tree.size(); ++i)
+        {
+            if (zbh_tree[i].valid)
+            {
+                zbh_tree[cur].zmax = std::max(zbh_tree[cur].zmax, zbh_tree[i].zmax);
+            }
+        }
+        ASSERT(zbh_tree[cur].zmax != -INF);
+    }
+}
+
 NODISCARD  Canvas Canvas::From(FrameBuffer& frame_buffer, ZBuffer& z_buffer, const int offsetx, const int offsety, const int width, const int height) NOEXCEPT
 {
   ASSERT(0 <= offsetx && 0 <= width && offsetx + width < frame_buffer.width);

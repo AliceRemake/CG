@@ -71,9 +71,9 @@ struct Rasterizer
   
   static void RenderPolygonsScanConvertZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons) NOEXCEPT;
   
-  static void RenderPolygonsScanConvertHZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons) NOEXCEPT;
+  static void RenderPolygonsScanConvertHZBuffer(Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons) NOEXCEPT;
   
-  static void RenderPolygonsScanConvertHAABBHZBuffer(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons, const std::vector<HAABB>& haabbs) NOEXCEPT;
+  static void RenderPolygonsScanConvertHAABBHZBuffer(Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons, const std::vector<HAABB>& haabbs) NOEXCEPT;
   
   static void RenderPolygonsIntervalScanLine(const Canvas& canvas, const std::vector<Vertex>& vertices, const std::vector<Polygon>& polygons) NOEXCEPT;
 };
